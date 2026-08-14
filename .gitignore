@@ -3,6 +3,5 @@ dist
 *.local
 .DS_Store
 
-# 교사 이름·시간표가 담긴 개인정보 — 저장소에 올리지 않는다
-public/teachers.json
+# 원본 시간표 엑셀은 올리지 않는다 (public/teachers.json 은 배포에 필요해 포함)
 *.xlsx
