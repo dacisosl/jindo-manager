@@ -1,5 +1,5 @@
 import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, RED, addDays, fromISO, toISO, colorOf, subjectOf, sectionTarget } from '../logic.js'
+import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, RED, TINTS, SECTION_TITLE, addDays, fromISO, toISO, colorOf, subjectOf, sectionTarget } from '../logic.js'
 import ContentsPanel from './ContentsPanel.jsx'
 import useWindowWidth from '../useWindowWidth.js'
 import useSplit from '../useSplit.js'
@@ -117,6 +117,85 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
     )
   }
 
+  // 칸 팝오버 — 표가 잘리지 않도록 화면 좌표(fixed)로 띄운다.
+  const popCell = pop ? sessions[pop.key] : null
+  const popPerf = !!(popCell && popCell.perf)
+  const W = 214
+  const popover = pop && popCell && (
+    <div
+      onClick={e => e.stopPropagation()}
+      data-print="hide"
+      style={{
+        position: 'fixed', width: W, background: '#FFFFFF', border: '1px solid ' + LINE, borderRadius: 6,
+        boxShadow: '0 10px 28px rgba(26,26,26,0.16)', zIndex: 80, textAlign: 'left', cursor: 'default',
+        left: Math.max(8, Math.min(pop.x, window.innerWidth - W - 8)),
+        top: Math.min(pop.y + 2, window.innerHeight - 210),
+      }}
+    >
+      <div style={{ padding: '9px 14px', fontSize: 13, color: SUB, borderBottom: '1px solid ' + LINE_SOFT }}>
+        {popTitle(pop.key, sessions)}
+      </div>
+      {pop.mode === 'menu' && (
+        <>
+          {popCell.canceled ? (
+            <div className="hov2" onClick={() => clearCancel(pop.key, popPerf ? '수행평가 표시를 해제했습니다.' : '결손을 해제했습니다.')} style={menuItem(true)}>
+              {popPerf ? '수행평가 해제' : '결손 해제'}
+            </div>
+          ) : (
+            <>
+              <div className="hov2" onClick={() => markCell(pop.key, 'loss')} style={menuItem(true)}>결손 처리</div>
+              <div className="hov2" onClick={() => markCell(pop.key, 'perf')} style={{ ...menuItem(false), color: RED, fontWeight: 600 }}>수행평가</div>
+            </>
+          )}
+          <div className="hov2" onClick={() => setPop({ ...pop, mode: 'edit' })} style={menuItem(false)}>내용 편집</div>
+          <div className="hov2" onClick={() => setPop({ ...pop, mode: 'color' })} style={{ ...menuItem(false), display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 11 }}>
+            <span style={{ width: 12, height: 12, borderRadius: 3, background: colorOf(data, popCell.cls), border: '1px solid rgba(26,26,26,0.18)', flex: 'none' }} />
+            반 색 바꾸기
+          </div>
+        </>
+      )}
+      {pop.mode === 'edit' && (
+        <div style={{ padding: '11px 14px 12px' }}>
+          <input
+            value={pop.draft}
+            onChange={e => setPop({ ...pop, draft: e.target.value })}
+            placeholder="내용"
+            autoFocus
+            style={{ width: '100%', boxSizing: 'border-box', border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', fontSize: 13, padding: '6px 8px' }}
+          />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
+            <button
+              onClick={() => { if (popCell.num) setContent(popCell.cls, popCell.num, pop.draft); setPop(null) }}
+              style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, fontWeight: 700, color: GREEN }}
+            >
+              저장
+            </button>
+          </div>
+        </div>
+      )}
+      {pop.mode === 'color' && (
+        <div style={{ padding: '11px 14px 13px' }}>
+          <div style={{ fontSize: 12, color: FAINT, marginBottom: 8 }}>{popCell.cls}</div>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 6 }}>
+            {TINTS.map(t => (
+              <span
+                key={t}
+                onClick={() => {
+                  setData(d => ({ ...d, colors: { ...d.colors, [popCell.cls]: t } }))
+                  setPop(null)
+                }}
+                style={{
+                  width: 24, height: 24, borderRadius: 4, background: t, cursor: 'pointer', boxSizing: 'border-box',
+                  border: colorOf(data, popCell.cls) === t ? '2px solid ' + GREEN : '1px solid rgba(26,26,26,0.14)',
+                }}
+              />
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  )
+
   // 이번 주에 해당하는 차시 번호 — 차시별 내용 패널을 이 위치로 스크롤한다.
   const weekNums = []
   days.forEach(day => {
@@ -134,99 +213,61 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
       const s = sessions[key]
       const cont = s && !s.canceled ? contentOf(s.cls, s.num) : ''
       const clickable = !!(s && (!s.canceled || s.user))
-      const popOpen = !!(pop && pop.key === key)
       const perf = !!(s && s.perf)
       return (
         <div
           key={key}
-          onClick={clickable ? e => { e.stopPropagation(); setPop({ key, mode: 'menu', draft: cont }); setMenuOpen(false) } : undefined}
+          onClick={clickable ? e => {
+            e.stopPropagation()
+            // 표가 overflow:hidden 이라 팝오버는 화면 좌표로 띄운다
+            const r = e.currentTarget.getBoundingClientRect()
+            setPop({ key, mode: 'menu', draft: cont, x: r.left, y: r.bottom })
+            setMenuOpen(false)
+          } : undefined}
           style={{
-            position: 'relative', minHeight: fit ? 0 : 58, padding: isMobile ? '4px 4px' : '7px 9px',
+            position: 'relative', minHeight: fit ? 0 : 58, padding: 0,
             boxSizing: 'border-box', minWidth: 0, overflow: 'hidden',
+            display: 'flex', flexDirection: 'column',
             borderTop: '1px solid ' + LINE_SOFT, borderLeft: '1px solid ' + LINE_SOFT,
             cursor: clickable ? 'pointer' : 'default',
             boxShadow: day.isToday ? 'inset 1px 0 0 rgba(15,92,77,0.4), inset -1px 0 0 rgba(15,92,77,0.4)' : 'none',
             background: s && (!s.canceled || perf) ? colorOf(data, s.cls) : '#FFFFFF',
           }}
         >
-          {s && !s.canceled && (
-            <>
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: isMobile ? 3 : 6, minWidth: 0, justifyContent: isMobile ? 'center' : 'flex-start' }}>
-                <span style={{ ...ellip(isMobile ? 11 : 13, 600), flex: 'none' }}>{s.cls}</span>
-                {mkNum(s.num)}
-              </div>
-              {!isMobile && (
-                <input
-                  value={cont}
-                  onChange={e => setContent(s.cls, s.num, e.target.value)}
-                  onClick={e => e.stopPropagation()}
-                  placeholder="내용"
-                  style={{ width: '100%', boxSizing: 'border-box', border: 'none', background: 'transparent', fontSize: 12, color: SUB, padding: 0, marginTop: 2, minWidth: 0 }}
-                />
-              )}
-            </>
-          )}
-          {s && s.canceled && perf && (
-            <>
-              <div style={{ ...ellip(isMobile ? 11 : 13, 600), textAlign: isMobile ? 'center' : 'left' }}>{s.cls}</div>
-              <div style={{ marginTop: 2, fontSize: isMobile ? 10 : 13, fontWeight: 700, color: RED, letterSpacing: '-0.01em', textAlign: isMobile ? 'center' : 'left', ...ellipBase }}>수행평가</div>
-            </>
-          )}
-          {s && s.canceled && !perf && (
-            <>
-              <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(45deg,transparent 0,transparent 5px,rgba(26,26,26,0.06) 5px,rgba(26,26,26,0.06) 6px)' }} />
-              <div style={{ position: 'relative', ...ellip(isMobile ? 11 : 13, 600), color: FAINT, textAlign: isMobile ? 'center' : 'left' }}>{s.cls}</div>
-              <div style={{ position: 'relative', fontSize: isMobile ? 10 : 12, color: SUB, marginTop: 2, textAlign: isMobile ? 'center' : 'left', ...ellipBase }}>{s.reason}</div>
-            </>
-          )}
-          {popOpen && (
+          {/* 윗줄: 반은 왼쪽, 차시는 오른쪽 끝 — 숫자가 한 열로 정렬돼 훑기 쉽다 */}
+          {s && (
             <div
-              onClick={e => e.stopPropagation()}
               style={{
-                position: 'absolute', left: 6, top: 'calc(100% - 8px)', width: 208, background: '#FFFFFF',
-                border: '1px solid ' + LINE, borderRadius: 6, boxShadow: '0 8px 24px rgba(26,26,26,0.12)',
-                zIndex: 50, textAlign: 'left', cursor: 'default',
+                display: 'flex', alignItems: 'baseline', gap: 5, minWidth: 0, flex: 1,
+                padding: isMobile ? '5px 5px 3px' : '6px 9px 4px',
+                justifyContent: isMobile ? 'center' : 'flex-start',
+                position: 'relative',
               }}
             >
-              <div style={{ padding: '9px 14px', fontSize: 13, color: SUB, borderBottom: '1px solid ' + LINE_SOFT }}>
-                {popTitle(pop.key, sessions)}
-              </div>
-              {pop.mode === 'menu' && (
-                <>
-                  {s && s.canceled ? (
-                    <div className="hov2" onClick={() => clearCancel(key, perf ? '수행평가 표시를 해제했습니다.' : '결손을 해제했습니다.')} style={menuItem(true)}>
-                      {perf ? '수행평가 해제' : '결손 해제'}
-                    </div>
-                  ) : (
-                    <>
-                      <div className="hov2" onClick={() => markCell(key, 'loss')} style={menuItem(true)}>결손 처리</div>
-                      <div className="hov2" onClick={() => markCell(key, 'perf')} style={{ ...menuItem(false), color: RED, fontWeight: 600 }}>수행평가</div>
-                    </>
-                  )}
-                  <div className="hov2" onClick={() => setPop({ ...pop, mode: 'edit' })} style={{ ...menuItem(false), paddingBottom: 11 }}>
-                    내용 편집
-                  </div>
-                </>
+              {s.canceled && !perf && (
+                <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(45deg,transparent 0,transparent 5px,rgba(26,26,26,0.06) 5px,rgba(26,26,26,0.06) 6px)' }} />
               )}
-              {pop.mode === 'edit' && (
-                <div style={{ padding: '11px 14px 12px' }}>
-                  <input
-                    value={pop.draft}
-                    onChange={e => setPop({ ...pop, draft: e.target.value })}
-                    placeholder="내용"
-                    autoFocus
-                    style={{ width: '100%', boxSizing: 'border-box', border: 'none', borderBottom: '1px solid ' + LINE, background: 'transparent', fontSize: 13, padding: '4px 0' }}
-                  />
-                  <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 10 }}>
-                    <button
-                      onClick={() => { if (s && s.num) setContent(s.cls, s.num, pop.draft); setPop(null) }}
-                      style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, fontWeight: 600, color: GREEN }}
-                    >
-                      저장
-                    </button>
-                  </div>
-                </div>
+              <span style={{ ...ellip(isMobile ? 11 : 12, 600), color: s.canceled && !perf ? FAINT : SUB, flex: 'none', position: 'relative' }}>{s.cls}</span>
+              {!isMobile && <div style={{ flex: 1 }} />}
+              {!s.canceled && mkNum(s.num)}
+              {perf && (
+                <span style={{ fontSize: isMobile ? 10 : 12, fontWeight: 700, color: RED, position: 'relative', ...ellipBase }}>수행평가</span>
               )}
+              {s.canceled && !perf && (
+                <span style={{ fontSize: isMobile ? 10 : 12, color: SUB, position: 'relative', ...ellipBase }}>{s.reason}</span>
+              )}
+            </div>
+          )}
+          {/* 아랫단: 내용은 옅은 흰 띠 위에 — 선을 긋지 않고 면으로 나눈다 */}
+          {s && !s.canceled && !isMobile && (
+            <div style={{ background: 'rgba(255,255,255,0.62)', padding: '3px 9px 4px', flex: 'none' }}>
+              <input
+                value={cont}
+                onChange={e => setContent(s.cls, s.num, e.target.value)}
+                onClick={e => e.stopPropagation()}
+                placeholder="내용"
+                style={{ width: '100%', boxSizing: 'border-box', border: 'none', background: 'transparent', fontSize: 12, color: INK, padding: 0, minWidth: 0 }}
+              />
             </div>
           )}
         </div>
@@ -251,10 +292,9 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
     <div data-print="hide" style={{ position: 'relative', display: 'inline-flex' }}>
       <button
         onClick={e => { e.stopPropagation(); setPrintOpen(!printOpen); setPop(null); setMenuOpen(false) }}
-        className="hov"
         style={{
-          display: 'flex', alignItems: 'center', gap: 5, border: '1px solid ' + LINE, borderRadius: 6,
-          background: '#FFFFFF', color: SUB, padding: '5px 10px', cursor: 'pointer', fontSize: 13, fontWeight: 600, lineHeight: 1,
+          display: 'flex', alignItems: 'center', gap: 5, border: 'none', borderRadius: 6,
+          background: GREEN, color: '#FFFFFF', padding: '6px 12px', cursor: 'pointer', fontSize: 13, fontWeight: 700, lineHeight: 1,
         }}
       >
         <PrinterIcon />
@@ -293,11 +333,11 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
   )
 
   const toolbar = (
-    <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 14, paddingBottom: 8, flex: 'none' }}>
-      {!isMobile && <div style={{ fontSize: 15, fontWeight: 600 }}>{semLabel}</div>}
+    <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 12, paddingBottom: 8, flex: 'none' }}>
+      <div style={{ fontSize: isMobile ? 15 : 16, fontWeight: 700, letterSpacing: '-0.01em' }}>{weekLabel}</div>
+      {!isMobile && <div style={{ fontSize: 12, color: FAINT }}>{semLabel}</div>}
       {printButton}
       <div style={{ flex: 1 }} />
-      <div style={{ fontSize: 13, color: SUB }}>{weekLabel}</div>
       <div data-print="hide" style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
         <button className="hov" onClick={() => { setWeekOffset(weekOffset - 1); setPop(null) }} style={navBtn(15)}>‹</button>
         <button className="hov" onClick={() => { setWeekOffset(0); setPop(null) }} style={navBtn(13)}>오늘</button>
@@ -320,19 +360,17 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
             </div>
           )}
         </div>
-        {!isMobile && (
+        {!isMobile && !showContents && (
           <button
-            onClick={() => setUI({ contentsOpen: !showContents })}
-            title={showContents ? '차시별 내용 접기' : '차시별 내용 펴기'}
-            className={showContents ? '' : 'hov'}
+            onClick={() => setUI({ contentsOpen: true })}
+            title="차시별 내용 펴기"
+            className="hov"
             style={{
-              display: 'flex', alignItems: 'center', gap: 5, marginLeft: 6,
-              border: '1px solid ' + (showContents ? GREEN : LINE), borderRadius: 6,
-              background: showContents ? GREEN : '#FFFFFF', color: showContents ? '#FFFFFF' : SUB,
-              padding: '5px 9px 5px 8px', cursor: 'pointer', fontSize: 13, fontWeight: 600, lineHeight: 1, whiteSpace: 'nowrap',
+              display: 'flex', alignItems: 'center', gap: 5, marginLeft: 6, border: 'none', borderRadius: 6,
+              background: 'none', color: SUB, padding: '5px 8px', cursor: 'pointer', fontSize: 13, fontWeight: 600, lineHeight: 1, whiteSpace: 'nowrap',
             }}
           >
-            <PanelIcon open={showContents} />
+            <PanelIcon open={false} />
             차시별 내용
           </button>
         )}
@@ -410,6 +448,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
             <ContentsPanel data={data} setData={setData} computed={computed} today={today} active={activeSubject} setActive={setActiveSubject} height="100%" focusNum={focusNum} weekNums={weekNums} />
           </div>
         )}
+        {popover}
       </div>
     )
   }
@@ -444,6 +483,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
           </div>
         )}
       </div>
+      {popover}
     </div>
   )
 }
@@ -486,7 +526,8 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
   return (
     <div data-print="hide" style={{ marginBottom: 12, flex: 'none' }}>
       {!alwaysOpen && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: open ? 7 : 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: open ? 7 : 0 }}>
+          <span style={SECTION_TITLE}>요약</span>
           <button
             onClick={() => setUI({ dashOpen: !open })}
             title={open ? '접기' : '펴기'}

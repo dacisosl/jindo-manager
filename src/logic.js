@@ -18,6 +18,9 @@ export const LINE_SOFT = '#E4E1DA'
 export const WARN = '#B4552D'
 export const RED = '#C2412D'
 
+// 화면 구획 제목 (요약 · 차시별 내용 · 일정 …)
+export const SECTION_TITLE = { fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', color: INK }
+
 export function toISO(d) {
   const p = n => String(n).padStart(2, '0')
   return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())

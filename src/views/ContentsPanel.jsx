@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { GREEN, INK, FAINT, LINE, LINE_SOFT, SUB, subjectOf } from '../logic.js'
+import { GREEN, INK, FAINT, LINE, LINE_SOFT, SUB, SECTION_TITLE, subjectOf } from '../logic.js'
 
 // 차시별 내용: 과목 탭 아래 차시 번호별 입력.
 // 여기 적은 내용이 진도표의 같은 차시 칸에 그대로 표시된다 (저장소는 contents 하나).
@@ -114,22 +114,83 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
     )
   }
 
+  const tabBtn = s => {
+    const on = s === subj
+    if (renaming === s) {
+      return (
+        <span key={s} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flex: 'none' }}>
+          <input
+            value={renameVal}
+            onChange={e => setRenameVal(e.target.value)}
+            onKeyDown={e => {
+              if (e.key === 'Enter') renameSubject()
+              if (e.key === 'Escape') setRenaming(null)
+            }}
+            autoFocus
+            style={{ width: 78, border: '1px solid ' + LINE, borderRadius: 5, background: '#FFFFFF', fontSize: 13, padding: '3px 6px' }}
+          />
+          <button onClick={renameSubject} style={{ ...miniBtn, color: GREEN, fontWeight: 700 }}>저장</button>
+          {data.subjects.length > 1 && <button onClick={deleteSubject} style={miniBtn}>삭제</button>}
+        </span>
+      )
+    }
+    return (
+      <span key={s} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, flex: 'none' }}>
+        <button
+          onClick={() => { setActive(s); setRenaming(s); setRenameVal(s) }}
+          title="과목 이름 수정"
+          style={{ border: 'none', background: 'none', padding: 2, cursor: 'pointer', color: on ? SUB : FAINT, display: 'flex', alignItems: 'center' }}
+        >
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 20h9" />
+            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
+          </svg>
+        </button>
+        <button
+          onClick={() => setActive(s)}
+          style={{
+            border: 'none', background: 'none', padding: '2px 2px 4px', cursor: 'pointer', fontSize: 14,
+            fontWeight: on ? 700 : 500, color: on ? INK : SUB,
+            borderBottom: '2px solid ' + (on ? GREEN : 'transparent'),
+          }}
+        >
+          {s}
+        </button>
+      </span>
+    )
+  }
+
   return (
     <div style={{ height: height || undefined, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      <div style={{ display: 'flex', gap: 14, alignItems: 'baseline', flexWrap: 'wrap', borderBottom: '1px solid ' + LINE, paddingBottom: 8, flex: 'none' }}>
-        {data.subjects.map(s => (
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 8, flex: 'none' }}>
+        <span style={SECTION_TITLE}>차시별 내용</span>
+        <div style={{ flex: 1 }} />
+        {onCollapse && (
           <button
-            key={s}
-            onClick={() => setActive(s)}
+            onClick={onCollapse}
+            title="접기"
+            className="hov"
             style={{
-              border: 'none', background: 'none', padding: '2px 0 6px', cursor: 'pointer', fontSize: 14,
-              fontWeight: s === subj ? 700 : 400, color: s === subj ? INK : SUB,
-              borderBottom: '2px solid ' + (s === subj ? GREEN : 'transparent'), marginBottom: -9,
+              display: 'flex', alignItems: 'center', gap: 3, border: 'none', borderRadius: 5, background: 'none',
+              padding: '3px 6px', cursor: 'pointer', color: SUB, fontSize: 12, fontWeight: 600,
             }}
           >
-            {s}
+            접기
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 5 16 12 9 19" />
+            </svg>
           </button>
-        ))}
+        )}
+      </div>
+      <div
+        className="chip-scroll"
+        style={{
+          display: 'flex', gap: 12, alignItems: 'center', background: '#F4F2ED',
+          border: '1px solid ' + LINE, borderRadius: '6px 6px 0 0', borderBottom: 'none',
+          padding: '5px 10px', flex: 'none',
+        }}
+      >
+        {data.subjects.map(tabBtn)}
         {adding ? (
           <input
             value={newSubj}
@@ -140,48 +201,20 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
             }}
             placeholder="과목명"
             autoFocus
-            style={{ width: 64, border: 'none', borderBottom: '1px solid ' + LINE, background: 'transparent', fontSize: 13, padding: '2px 0' }}
+            style={{ width: 74, border: '1px solid ' + LINE, borderRadius: 5, background: '#FFFFFF', fontSize: 13, padding: '3px 6px', flex: 'none' }}
           />
         ) : (
-          <button onClick={() => setAdding(true)} style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 14, color: FAINT }}>+</button>
-        )}
-        <div style={{ flex: 1 }} />
-        {renaming ? (
-          <input
-            value={renameVal}
-            onChange={e => setRenameVal(e.target.value)}
-            onKeyDown={e => {
-              if (e.key === 'Enter') renameSubject()
-              if (e.key === 'Escape') setRenaming(false)
-            }}
-            autoFocus
-            style={{ width: 72, border: 'none', borderBottom: '1px solid ' + LINE, background: 'transparent', fontSize: 12, padding: '2px 0' }}
-          />
-        ) : (
-          <button onClick={() => { setRenaming(true); setRenameVal(subj) }} style={miniBtn}>이름 변경</button>
-        )}
-        {data.subjects.length > 1 && <button onClick={deleteSubject} style={miniBtn}>삭제</button>}
-        {onCollapse && (
-          <button
-            onClick={onCollapse}
-            title="차시별 내용 접기"
-            className="hov"
-            style={{
-              display: 'flex', alignItems: 'center', gap: 3, border: '1px solid ' + LINE, borderRadius: 5,
-              background: '#FFFFFF', padding: '3px 6px', cursor: 'pointer', color: SUB, fontSize: 11, fontWeight: 600, marginBottom: -2,
-            }}
-          >
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="9 5 16 12 9 19" />
-            </svg>
-            접기
-          </button>
+          <button onClick={() => setAdding(true)} title="과목 추가" style={{ border: 'none', background: 'none', padding: '0 2px', cursor: 'pointer', fontSize: 16, color: FAINT, flex: 'none', lineHeight: 1 }}>+</button>
         )}
       </div>
-      {subjClasses.length === 0 && (
-        <div style={{ marginTop: 10, fontSize: 12, color: FAINT, flex: 'none' }}>이 과목으로 지정된 반이 없습니다. 시간표 편집에서 반의 과목을 지정하세요.</div>
-      )}
-      <div ref={scrollRef} className="soft-scroll" style={{ marginTop: 4, flex: 1, minHeight: 0, overflowY: height ? 'auto' : 'visible', paddingRight: height ? 6 : 0 }}>
+      <div
+        ref={scrollRef}
+        className="soft-scroll"
+        style={{
+          flex: 1, minHeight: 0, overflowY: height ? 'auto' : 'visible',
+          border: '1px solid ' + LINE, borderRadius: '0 0 6px 6px', background: '#FFFFFF', padding: '2px 8px 4px',
+        }}
+      >
         {rows}
       </div>
     </div>

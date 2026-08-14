@@ -45,6 +45,8 @@ export default function App() {
 
   const ctx = { data, patch, setData, computed, today, snack, setSnack, go, goImport, weekOffset, setWeekOffset, stagger }
 
+  const setupReady = d => !!(d.semStart && d.semEnd && d.semStart < d.semEnd && Object.keys(d.pattern).length)
+
   const finishSetup = () => {
     patch({ setupDone: true })
     setWeekOffset(0)
@@ -89,15 +91,28 @@ export default function App() {
         </div>
         <div style={{ flex: 1 }} />
         {view === 'setup' ? (
-          <button
-            data-intro-hamil
-            onClick={() => setHamilOpen(true)}
-            title="해밀고 데이터 불러오기"
-            className="hov"
-            style={{ border: 'none', background: 'none', borderRadius: 6, padding: 3, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
-          >
-            <HamilMark />
-          </button>
+          <>
+            <button
+              data-intro-hamil
+              onClick={() => setHamilOpen(true)}
+              title="해밀고 데이터 불러오기"
+              className="hov"
+              style={{ border: 'none', background: 'none', borderRadius: 6, padding: 3, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+            >
+              <HamilMark />
+            </button>
+            <button
+              data-intro-start
+              onClick={() => setupReady(data) && finishSetup()}
+              style={{
+                border: 'none', borderRadius: 6, padding: '7px 18px', fontSize: 14, fontWeight: 700,
+                background: setupReady(data) ? GREEN : '#D9D5CE', color: '#FFFFFF',
+                cursor: setupReady(data) ? 'pointer' : 'default',
+              }}
+            >
+              {data.setupDone ? '완료' : '시작'}
+            </button>
+          </>
         ) : (
           <button
             onClick={() => go('setup')}
