@@ -19,6 +19,8 @@ export const defaultData = () => ({
     examReset: false,
     examId: null,
     anim: true,
+    dash: { today: true, progress: true, exam: true }, // 대시보드에 띄울 항목
+    printScale: 'l', // 인쇄 크기: s(A4의 1/4) · m(1/2) · l(1)
   },
   ui: { dashOpen: true, contentsOpen: true, splitPct: 62 },
   introSeen: false,
@@ -30,7 +32,7 @@ function normalize(d) {
   const out = {
     ...base,
     ...d,
-    cfg: { ...base.cfg, ...(d.cfg || {}) },
+    cfg: { ...base.cfg, ...(d.cfg || {}), dash: { ...base.cfg.dash, ...((d.cfg || {}).dash || {}) } },
     ui: { ...base.ui, ...(d.ui || {}) },
   }
   if (!Array.isArray(out.subjects) || !out.subjects.length) out.subjects = ['수학']

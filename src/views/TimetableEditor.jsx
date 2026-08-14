@@ -4,7 +4,7 @@ import { GREEN, INK, LINE, LINE_SOFT, FAINT, SUB, TINTS, colorOf, subjectOf } fr
 // 시간표 입력 두 가지 방식:
 // 1) 블록 선택: 칸들을 탭해 선택하고 [반 등록]으로 한 번에 배정 (기본, 모바일 주력)
 // 2) 칠하기: 팔레트에서 반을 고른 뒤 드래그/탭으로 칠하기
-export default function TimetableEditor({ data, setData, cellHeight = 46, compact = false }) {
+export default function TimetableEditor({ data, setData, cellHeight = 46, compact = false, fill = false }) {
   const [selTool, setSelTool] = useState('select')
   const [selected, setSelected] = useState({}) // {'dow-p': true}
   const [regOpen, setRegOpen] = useState(false)
@@ -97,7 +97,7 @@ export default function TimetableEditor({ data, setData, cellHeight = 46, compac
           }}
           onMouseEnter={() => { if (paintRef.current) paint(k) }}
           style={{
-            minHeight: cellHeight, padding: compact ? '7px 11px' : '8px 12px', boxSizing: 'border-box',
+            minHeight: cellHeight, padding: compact ? '6px 10px' : '8px 12px', boxSizing: 'border-box', overflow: 'hidden',
             borderTop: '1px solid ' + LINE_SOFT, borderLeft: '1px solid ' + LINE_SOFT,
             cursor: 'pointer',
             background: name ? colorOf(data, name) : isSel ? 'rgba(15,92,77,0.06)' : '#FFFFFF',
@@ -227,9 +227,13 @@ export default function TimetableEditor({ data, setData, cellHeight = 46, compac
           )}
         </div>
       </div>
-      <div className="table-scroll">
-        <div data-intro-grid className="table-min" style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', userSelect: 'none' }}>
-          <div style={{ display: 'grid', gridTemplateColumns: '44px repeat(5,1fr)' }}>
+      <div className="table-scroll" style={{ flex: fill ? 1 : undefined, minHeight: 0 }}>
+        <div
+          data-intro-grid
+          className="table-min"
+          style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', userSelect: 'none', height: fill ? '100%' : undefined, overflow: 'hidden' }}
+        >
+          <div style={{ display: 'grid', gridTemplateColumns: '40px repeat(5,minmax(0,1fr))', gridTemplateRows: fill ? 'auto repeat(7, minmax(0,1fr))' : undefined, height: fill ? '100%' : undefined }}>
             <div />
             {eDays.map(d => (
               <div key={d} style={{ padding: '10px 12px 8px', borderLeft: '1px solid ' + LINE_SOFT, fontSize: 13, color: SUB, fontWeight: 600 }}>{d}</div>
@@ -238,11 +242,9 @@ export default function TimetableEditor({ data, setData, cellHeight = 46, compac
           </div>
         </div>
       </div>
-      {!compact && (
-        <div style={{ marginTop: 12, fontSize: 13, color: SUB }}>
-          {weekly ? '주당  ' + weekly : '칸을 선택해 반 등록을 누르거나, 반을 고른 뒤 칠해주세요.'}
-        </div>
-      )}
+      <div style={{ marginTop: 8, fontSize: 12, color: SUB, flex: 'none', ...(fill ? { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' } : {}) }}>
+        {weekly ? '주당  ' + weekly : '칸을 선택해 반 등록을 누르거나, 반을 고른 뒤 칠해주세요.'}
+      </div>
     </>
   )
 }

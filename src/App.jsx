@@ -2,8 +2,6 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { loadData, saveData } from './storage.js'
 import { compute, toISO, GREEN, SUB } from './logic.js'
 import GridView from './views/GridView.jsx'
-import TimetableView from './views/TimetableView.jsx'
-import ScheduleView from './views/ScheduleView.jsx'
 import ImportView from './views/ImportView.jsx'
 import SettingsModal from './views/SettingsModal.jsx'
 import HamilModal from './views/HamilModal.jsx'
@@ -14,6 +12,10 @@ import useWindowWidth from './useWindowWidth.js'
 export default function App() {
   const [data, setData] = useState(loadData)
   useEffect(() => saveData(data), [data])
+  // 인쇄 배율은 CSS가 body 속성을 보고 정한다
+  useEffect(() => {
+    document.body.dataset.printScale = data.cfg.printScale || 'l'
+  }, [data.cfg.printScale])
 
   const { isMobile } = useWindowWidth()
   const [view, setView] = useState(() => (loadData().setupDone ? 'grid' : 'setup'))
@@ -51,24 +53,38 @@ export default function App() {
     setTimeout(() => setStagger(false), 1600)
   }
 
+  // 진도표는 데스크톱·모바일 모두 한 화면에 담고(모바일은 탭으로 나뉜다),
+  // 최초 설정은 데스크톱에서만 한 화면에 담는다. 나머지는 자연스럽게 스크롤한다.
+  const fit = view === 'grid' || (view === 'setup' && !isMobile)
+
   return (
-    <div style={{ minHeight: '100vh', padding: isMobile ? '16px 14px 90px' : '26px 44px 110px', boxSizing: 'border-box' }}>
+    <div
+      style={{
+        height: fit ? '100vh' : undefined,
+        minHeight: fit ? undefined : '100vh',
+        overflow: fit ? 'hidden' : undefined,
+        display: 'flex', flexDirection: 'column',
+        padding: isMobile ? '14px 14px 80px' : fit ? '16px 32px 18px' : '22px 40px 90px',
+        boxSizing: 'border-box',
+      }}
+    >
       <div
         data-print="hide"
         style={{
-          maxWidth: 1280, margin: '0 auto ' + (isMobile ? 18 : 26) + 'px',
-          display: 'flex', alignItems: 'center', gap: 14, borderBottom: '1px solid #C9C5BE', paddingBottom: 12,
+          width: '100%', maxWidth: 1320, margin: '0 auto ' + (isMobile ? 14 : fit ? 12 : 22) + 'px',
+          display: 'flex', alignItems: 'center', gap: 14, borderBottom: '1px solid #C9C5BE',
+          paddingBottom: fit ? 9 : 12, flex: 'none', boxSizing: 'border-box',
         }}
       >
         <div
           onClick={() => data.setupDone && go('grid')}
           style={{
             display: 'flex', alignItems: 'center', gap: 10,
-            fontSize: isMobile ? 21 : 25, fontWeight: 800, letterSpacing: '-0.035em',
+            fontSize: isMobile ? 20 : 23, fontWeight: 800, letterSpacing: '-0.035em',
             cursor: data.setupDone ? 'pointer' : 'default',
           }}
         >
-          <span style={{ display: 'inline-block', width: 7, height: isMobile ? 20 : 24, borderRadius: 2, background: GREEN, flex: 'none' }} />
+          <span style={{ display: 'inline-block', width: 6, height: isMobile ? 19 : 22, borderRadius: 2, background: GREEN, flex: 'none' }} />
           진도계획표
         </div>
         <div style={{ flex: 1 }} />
@@ -77,21 +93,23 @@ export default function App() {
             data-intro-hamil
             onClick={() => setHamilOpen(true)}
             title="해밀고 데이터 불러오기"
-            style={{
-              border: 'none', borderRadius: 5, background: GREEN, color: '#FFFFFF',
-              fontSize: 12, fontWeight: 700, letterSpacing: '0.02em', padding: '5px 9px', cursor: 'pointer', lineHeight: 1,
-            }}
+            className="hov"
+            style={{ border: 'none', background: 'none', borderRadius: 6, padding: 3, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
           >
-            해밀
+            <HamilMark />
           </button>
         ) : (
           <button
             onClick={() => go('setup')}
-            title="설정 화면으로 돌아가기"
-            className="hov"
-            style={{ border: 'none', background: 'none', padding: 5, borderRadius: 6, cursor: 'pointer', display: 'flex', color: SUB }}
+            title="학기·시간표·일정 수정"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5,
+              border: '1px solid ' + GREEN, borderRadius: 999, background: '#FFFFFF', color: GREEN,
+              padding: '5px 13px 5px 10px', cursor: 'pointer', fontSize: 13, fontWeight: 700, lineHeight: 1,
+            }}
           >
-            <BackspaceIcon />
+            <PencilIcon />
+            수정
           </button>
         )}
         <button
@@ -104,11 +122,11 @@ export default function App() {
         </button>
       </div>
 
-      {view === 'grid' && <GridView {...ctx} />}
-      {view === 'timetable' && <TimetableView {...ctx} />}
-      {view === 'schedule' && <ScheduleView {...ctx} />}
-      {view === 'import' && <ImportView {...ctx} kind={importKind} />}
-      {view === 'setup' && <SetupView {...ctx} onStart={finishSetup} />}
+      <div style={{ flex: fit ? 1 : undefined, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: fit ? 'auto' : undefined }}>
+        {view === 'grid' && <GridView {...ctx} fit={fit} />}
+        {view === 'import' && <ImportView {...ctx} kind={importKind} />}
+        {view === 'setup' && <SetupView {...ctx} fit={fit} onStart={finishSetup} />}
+      </div>
 
       {settingsOpen && (
         <SettingsModal
@@ -135,12 +153,31 @@ export default function App() {
   )
 }
 
-function BackspaceIcon() {
+// 학교 로고: public/haemil.png 가 있으면 그 이미지를, 없으면 글자 배지를 쓴다.
+function HamilMark() {
+  const [failed, setFailed] = useState(false)
+  if (failed) {
+    return (
+      <span style={{ display: 'inline-block', borderRadius: 5, background: GREEN, color: '#FFFFFF', fontSize: 12, fontWeight: 700, padding: '5px 9px', lineHeight: 1 }}>
+        해밀
+      </span>
+    )
+  }
   return (
-    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M20 5H9.5L3 12l6.5 7H20a1.6 1.6 0 0 0 1.6-1.6V6.6A1.6 1.6 0 0 0 20 5z" />
-      <polyline points="15 9.5 11.5 12 15 14.5" />
-      <line x1="11.5" y1="12" x2="17.5" y2="12" />
+    <img
+      src={import.meta.env.BASE_URL + 'haemil.png'}
+      alt="해밀고등학교"
+      onError={() => setFailed(true)}
+      style={{ height: 28, width: 'auto', display: 'block' }}
+    />
+  )
+}
+
+function PencilIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
     </svg>
   )
 }

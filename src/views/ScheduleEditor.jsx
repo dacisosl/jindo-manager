@@ -6,7 +6,7 @@ const TYPES = ['휴업일', '행사', '고사', '개인']
 const defaultRange = type => type === '고사'
 
 // 일정 등록 폼 + 목록. 최초 설정 화면과 일정 화면이 함께 쓴다.
-export default function ScheduleEditor({ data, setData, computed, setSnack, maxHeight }) {
+export default function ScheduleEditor({ data, setData, computed, setSnack, maxHeight, fill = false }) {
   const todayISO = toISO(new Date())
   const initDate = data.semStart && todayISO < data.semStart ? data.semStart : todayISO
   const [sched, setSched] = useState({
@@ -91,7 +91,7 @@ export default function ScheduleEditor({ data, setData, computed, setSnack, maxH
     <>
       <div
         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add() } }}
-        style={{ borderTop: '1px solid ' + LINE, borderBottom: '1px solid ' + LINE, padding: '14px 0 16px' }}
+        style={{ borderTop: '1px solid ' + LINE, borderBottom: '1px solid ' + LINE, padding: '12px 0 14px', flex: 'none' }}
       >
         <div style={{ display: 'flex', gap: 14, alignItems: 'baseline', flexWrap: 'wrap' }}>
           {TYPES.map(tp => (
@@ -166,7 +166,13 @@ export default function ScheduleEditor({ data, setData, computed, setSnack, maxH
         )}
       </div>
 
-      <div className="soft-scroll" style={{ maxHeight, overflowY: maxHeight ? 'auto' : 'visible', paddingRight: maxHeight ? 6 : 0 }}>
+      <div
+        className="soft-scroll"
+        style={{
+          maxHeight, flex: fill ? 1 : undefined, minHeight: 0,
+          overflowY: maxHeight || fill ? 'auto' : 'visible', paddingRight: maxHeight || fill ? 6 : 0,
+        }}
+      >
         {groups.length === 0 && <div style={{ paddingTop: 18, fontSize: 13, color: FAINT }}>등록된 일정이 없습니다.</div>}
         {groups.map(g => (
           <div key={g.label} style={{ paddingTop: 16 }}>

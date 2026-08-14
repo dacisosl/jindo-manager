@@ -39,6 +39,10 @@ input::placeholder, textarea::placeholder { color: #B0ACA5; }
   body { background: #FFFFFF; }
   [data-print='hide'] { display: none !important; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* A4 한 장 대비 차지하는 넓이 — 작게 1/4, 중간 1/2, 크게 1 */
+  body[data-print-scale='s'] { zoom: 0.5; }
+  body[data-print-scale='m'] { zoom: 0.707; }
+  body[data-print-scale='l'] { zoom: 1; }
 }
 
 /* intro.js — 앱 톤에 맞춘 덮어쓰기 (딥그린 포인트, 무채색) */

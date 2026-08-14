@@ -7,7 +7,7 @@ import ScheduleEditor from './ScheduleEditor.jsx'
 import useWindowWidth from '../useWindowWidth.js'
 
 // 최초 설정: 학기 기간 · 시간표 · 일정 등록을 한 화면에서 끝낸다.
-export default function SetupView({ data, patch, setData, computed, setSnack, onStart }) {
+export default function SetupView({ data, patch, setData, computed, setSnack, goImport, onStart, fit }) {
   const { isMobile } = useWindowWidth()
   const tourRef = useRef(null)
 
@@ -52,57 +52,71 @@ export default function SetupView({ data, patch, setData, computed, setSnack, on
   const secTitle = { fontSize: 13, fontWeight: 700, color: SUB, letterSpacing: '0.01em' }
 
   return (
-    <div style={{ maxWidth: 1180, margin: (isMobile ? 6 : 12) + 'px auto 0' }}>
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, paddingBottom: 22 }}>
-        <div style={{ fontSize: 21, fontWeight: 700 }}>시작하기</div>
+    <div
+      style={{
+        width: '100%', maxWidth: 1320, margin: '0 auto', height: fit ? '100%' : undefined,
+        display: 'flex', flexDirection: 'column', minHeight: 0,
+      }}
+    >
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 14, paddingBottom: 14, flex: 'none' }}>
+        <div style={{ fontSize: 19, fontWeight: 700 }}>{data.setupDone ? '수정' : '시작하기'}</div>
+        <div style={{ fontSize: 12, color: FAINT }}>
+          {data.setupDone ? '학기 기간 · 시간표 · 일정을 고칠 수 있습니다.' : '학기 기간과 시간표를 채우면 진도표가 만들어집니다.'}
+        </div>
         <div style={{ flex: 1 }} />
-        <button onClick={startTour} style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: GREEN }}>
+        <button onClick={() => goImport('timetable')} style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: GREEN }}>
+          파일에서 가져오기
+        </button>
+        <button onClick={startTour} style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: SUB }}>
           안내 보기
         </button>
       </div>
 
-      <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 30 : 40, alignItems: 'flex-start' }}>
-        <div style={{ flex: 1, minWidth: 0, width: isMobile ? '100%' : undefined }}>
-          <div data-intro-sem>
-            <div style={secTitle}>학기 기간</div>
-            <div style={{ display: 'flex', gap: 24, marginTop: 10, maxWidth: 400 }}>
-              <label style={{ flex: 1, fontSize: 12, color: FAINT }}>
-                시작일
+      <div
+        style={{
+          display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 26 : 34,
+          alignItems: 'stretch', flex: fit ? 1 : undefined, minHeight: 0,
+        }}
+      >
+        <div style={{ flex: 1, minWidth: 0, width: isMobile ? '100%' : undefined, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <div data-intro-sem style={{ flex: 'none' }}>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 22 }}>
+              <div style={{ ...secTitle, width: 52, flex: 'none' }}>학기</div>
+              <label style={{ fontSize: 12, color: FAINT, display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                시작
                 <input type="date" value={data.semStart} onChange={e => patch({ semStart: e.target.value })} style={dateInput} />
               </label>
-              <label style={{ flex: 1, fontSize: 12, color: FAINT }}>
-                종료일
+              <label style={{ fontSize: 12, color: FAINT, display: 'flex', alignItems: 'baseline', gap: 8 }}>
+                종료
                 <input type="date" value={data.semEnd} onChange={e => patch({ semEnd: e.target.value })} style={dateInput} />
               </label>
             </div>
           </div>
 
-          <div style={{ marginTop: 32 }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 12 }}>
-              <div style={secTitle}>시간표</div>
-              <div style={{ fontSize: 12, color: FAINT }}>칸을 선택하고 반 등록을 누르세요.</div>
-            </div>
-            <div style={{ marginTop: 12 }}>
-              <TimetableEditor data={data} setData={setData} cellHeight={42} compact />
-            </div>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, margin: '18px 0 8px', flex: 'none' }}>
+            <div style={{ ...secTitle, width: 52, flex: 'none' }}>시간표</div>
+            <div style={{ fontSize: 12, color: FAINT }}>칸을 선택하고 반 등록을 누르세요.</div>
+          </div>
+          <div style={{ flex: fit ? 1 : undefined, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <TimetableEditor data={data} setData={setData} cellHeight={fit ? 0 : 42} compact fill={fit} />
           </div>
         </div>
 
-        <div data-intro-sched style={{ width: isMobile ? '100%' : 320, flex: 'none' }}>
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, paddingBottom: 10 }}>
+        <div data-intro-sched style={{ width: isMobile ? '100%' : 300, flex: 'none', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, paddingBottom: 8, flex: 'none' }}>
             <div style={secTitle}>일정</div>
             <div style={{ fontSize: 12, color: FAINT }}>휴업일 · 고사 · 출장</div>
           </div>
-          <ScheduleEditor data={data} setData={setData} computed={computed} setSnack={setSnack} maxHeight={isMobile ? undefined : 300} />
+          <ScheduleEditor data={data} setData={setData} computed={computed} setSnack={setSnack} fill={fit} maxHeight={isMobile || fit ? undefined : 300} />
         </div>
       </div>
 
-      <div style={{ display: 'flex', alignItems: 'center', marginTop: 34, paddingBottom: 40 }}>
+      <div style={{ display: 'flex', alignItems: 'center', marginTop: 16, paddingBottom: isMobile ? 40 : 0, flex: 'none' }}>
         <button
           data-intro-start
           onClick={() => ok && onStart()}
           style={{
-            border: 'none', borderRadius: 6, padding: '10px 24px', fontSize: 15, fontWeight: 600,
+            border: 'none', borderRadius: 6, padding: '9px 24px', fontSize: 15, fontWeight: 700,
             background: ok ? GREEN : LINE, color: '#FFFFFF', cursor: ok ? 'pointer' : 'default',
           }}
         >

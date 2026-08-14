@@ -13,8 +13,9 @@ export default function ImportView({ data, setData, go, goImport, setSnack, kind
   const fileRef = useRef()
   const lastFile = useRef(null)
 
-  const back = kind === 'timetable' ? 'timetable' : 'schedule'
-  const backLabel = kind === 'timetable' ? '← 시간표' : '← 일정'
+  // 시간표·일정 편집은 설정 화면에 있으므로 그쪽으로 돌아간다
+  const back = 'setup'
+  const backLabel = '← 돌아가기'
   const hasKey = !!getApiKey()
 
   const run = async file => {
@@ -46,7 +47,7 @@ export default function ImportView({ data, setData, go, goImport, setSnack, kind
       if (!newClasses.includes(c)) newClasses.push(c)
     })
     setData(d => ({ ...d, pattern: { ...imp.rec }, classes: newClasses }))
-    go('timetable')
+    go('setup')
     setSnack({ text: '시간표를 적용했습니다.', kind: 'pattern', prev, prevClasses })
   }
 
@@ -58,7 +59,7 @@ export default function ImportView({ data, setData, go, goImport, setSnack, kind
       .filter(e => !dup(e))
       .map((e, i) => ({ id: Date.now() + i, start: e.start, end: e.end, name: e.name, type: e.type }))
     setData(d => ({ ...d, events: [...d.events, ...added] }))
-    go('schedule')
+    go('setup')
     setSnack({ text: added.length + '개 일정을 추가했습니다.', kind: 'events', prev })
   }
 

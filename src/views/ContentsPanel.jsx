@@ -1,9 +1,10 @@
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { GREEN, INK, FAINT, LINE, LINE_SOFT, SUB, subjectOf } from '../logic.js'
 
 // 차시별 내용: 과목 탭 아래 차시 번호별 입력.
 // 여기 적은 내용이 진도표의 같은 차시 칸에 그대로 표시된다 (저장소는 contents 하나).
-export default function ContentsPanel({ data, setData, computed, today, active, setActive, height, onCollapse }) {
+export default function ContentsPanel({ data, setData, computed, today, active, setActive, height, focusNum, weekNums, onCollapse }) {
+  const scrollRef = useRef(null)
   const [adding, setAdding] = useState(false)
   const [newSubj, setNewSubj] = useState('')
   const [renaming, setRenaming] = useState(false)
@@ -74,12 +75,32 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
     setActive(data.subjects.filter(s => s !== subj)[0])
   }
 
+  // 보고 있는 주의 차시를 패널 가운데로 옮긴다 — 주를 넘길 때마다 따라온다.
+  useEffect(() => {
+    const el = scrollRef.current
+    if (!el || !focusNum || el.scrollHeight <= el.clientHeight) return
+    const row = el.querySelector('[data-row="' + focusNum + '"]')
+    if (!row) return
+    // 즉시 이동 — 부드러운 스크롤은 렌더링이 멈춘 탭에서 반영되지 않는다
+    el.scrollTop = Math.max(0, row.offsetTop - (el.clientHeight - row.offsetHeight) / 2)
+  }, [focusNum, subj, height])
+
+  const week = new Set(weekNums || [])
   const rows = []
   for (let n = 1; n <= rowCount; n++) {
     const isCur = n === curNum
+    const inWeek = week.has(n)
     rows.push(
-      <div key={n} style={{ display: 'flex', alignItems: 'baseline', gap: 10, padding: '6px 0', borderBottom: '1px solid ' + LINE_SOFT }}>
-        <div style={{ width: 30, textAlign: 'right', fontSize: 13, fontWeight: isCur ? 700 : 400, color: isCur ? GREEN : FAINT, flex: 'none' }}>{n}</div>
+      <div
+        key={n}
+        data-row={n}
+        style={{
+          display: 'flex', alignItems: 'baseline', gap: 10, padding: '5px 6px', borderBottom: '1px solid ' + LINE_SOFT,
+          background: inWeek ? 'rgba(15,92,77,0.05)' : 'transparent',
+          borderRadius: inWeek ? 4 : 0,
+        }}
+      >
+        <div style={{ width: 26, textAlign: 'right', fontSize: 13, fontWeight: isCur || inWeek ? 700 : 400, color: isCur ? GREEN : inWeek ? INK : FAINT, flex: 'none' }}>{n}</div>
         <input
           value={(data.contents[subj] || {})[n] || ''}
           onChange={e => setContent(n, e.target.value)}
@@ -141,17 +162,26 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
         )}
         {data.subjects.length > 1 && <button onClick={deleteSubject} style={miniBtn}>삭제</button>}
         {onCollapse && (
-          <button onClick={onCollapse} title="차시별 내용 접기" className="hov" style={{ border: 'none', background: 'none', padding: '2px 4px', borderRadius: 4, cursor: 'pointer', color: FAINT, display: 'flex', alignItems: 'center', marginBottom: -2 }}>
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <button
+            onClick={onCollapse}
+            title="차시별 내용 접기"
+            className="hov"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 3, border: '1px solid ' + LINE, borderRadius: 5,
+              background: '#FFFFFF', padding: '3px 6px', cursor: 'pointer', color: SUB, fontSize: 11, fontWeight: 600, marginBottom: -2,
+            }}
+          >
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="9 5 16 12 9 19" />
             </svg>
+            접기
           </button>
         )}
       </div>
       {subjClasses.length === 0 && (
         <div style={{ marginTop: 10, fontSize: 12, color: FAINT, flex: 'none' }}>이 과목으로 지정된 반이 없습니다. 시간표 편집에서 반의 과목을 지정하세요.</div>
       )}
-      <div className="soft-scroll" style={{ marginTop: 4, flex: 1, minHeight: 0, overflowY: height ? 'auto' : 'visible', paddingRight: height ? 6 : 0 }}>
+      <div ref={scrollRef} className="soft-scroll" style={{ marginTop: 4, flex: 1, minHeight: 0, overflowY: height ? 'auto' : 'visible', paddingRight: height ? 6 : 0 }}>
         {rows}
       </div>
     </div>

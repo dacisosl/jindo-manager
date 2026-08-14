@@ -2,3 +2,7 @@ node_modules
 dist
 *.local
 .DS_Store
+
+# 교사 이름·시간표가 담긴 개인정보 — 저장소에 올리지 않는다
+public/teachers.json
+*.xlsx

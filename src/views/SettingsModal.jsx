@@ -7,7 +7,7 @@ import Modal from './Modal.jsx'
 export default function SettingsModal({ data, setData, computed, today, setSnack, onClose, onResetSetup }) {
   const [confirmClear, setConfirmClear] = useState(false)
   const cfg = data.cfg
-  const [open, setOpen] = useState({ sem: true, count: true, data: false, file: false })
+  const [open, setOpen] = useState({ sem: true, count: true, dash: false, print: false, data: false, file: false })
   const [key, setKey] = useState(getApiKey)
   const [keyShown, setKeyShown] = useState(false)
   const [model, setModelState] = useState(getModel)
@@ -137,6 +137,43 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
               )}
             </div>
             <div style={{ fontSize: 12, color: FAINT }}>목표는 따로 정하지 않습니다 — 설정된 시간표의 마지막 차시가 곧 목표차시입니다.</div>
+          </div>
+        </Sec>
+
+        <Sec id="dash" title="대시보드">
+          <div style={{ padding: '0 0 20px', display: 'flex', flexDirection: 'column', gap: 15, fontSize: 14 }}>
+            {[['today', '오늘의 수업'], ['progress', '반별 진도'], ['exam', '고사 D-day']].map(([k, labelText]) => (
+              <div key={k} style={row}>
+                <span style={{ flex: 1 }}>{labelText}</span>
+                <Toggle on={cfg.dash[k]} onClick={() => setCfg({ dash: { ...cfg.dash, [k]: !cfg.dash[k] } })} />
+              </div>
+            ))}
+            <div style={{ fontSize: 12, color: FAINT }}>켠 항목만 진도표 위에 표시됩니다.</div>
+          </div>
+        </Sec>
+
+        <Sec id="print" title="인쇄">
+          <div style={{ padding: '0 0 20px', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14 }}>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {[['s', '작게', '1/4'], ['m', '중간', '1/2'], ['l', '크게', '1']].map(([k, labelText, ratio]) => {
+                const on = cfg.printScale === k
+                return (
+                  <button
+                    key={k}
+                    onClick={() => setCfg({ printScale: k })}
+                    style={{
+                      flex: 1, border: '1px solid ' + (on ? GREEN : LINE), borderRadius: 6, cursor: 'pointer',
+                      background: on ? GREEN : '#FFFFFF', color: on ? '#FFFFFF' : SUB,
+                      padding: '9px 0', fontSize: 13, fontWeight: on ? 700 : 500,
+                    }}
+                  >
+                    {labelText}
+                    <div style={{ fontSize: 11, fontWeight: 400, marginTop: 3, opacity: 0.85 }}>A4 {ratio}</div>
+                  </button>
+                )
+              })}
+            </div>
+            <div style={{ fontSize: 12, color: FAINT }}>진도표의 인쇄 버튼을 누를 때 쓰는 기본 크기입니다.</div>
           </div>
         </Sec>
 
