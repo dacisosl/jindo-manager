@@ -22,7 +22,12 @@ export const defaultData = () => ({
     dash: { today: true, progress: true, exam: true }, // 대시보드에 띄울 항목
     printScale: 'l', // 인쇄 크기: s(A4의 1/4) · m(1/2) · l(1)
   },
-  ui: { dashOpen: true, contentsOpen: true, splitPct: 62 },
+  ui: {
+    dashOpen: true,
+    contentsOpen: true,
+    splitPct: 62,
+    dashW: { today: 26, progress: 60, exam: 14 }, // 대시보드 카드 너비 비율(%)
+  },
   introSeen: false,
 })
 
@@ -33,7 +38,7 @@ function normalize(d) {
     ...base,
     ...d,
     cfg: { ...base.cfg, ...(d.cfg || {}), dash: { ...base.cfg.dash, ...((d.cfg || {}).dash || {}) } },
-    ui: { ...base.ui, ...(d.ui || {}) },
+    ui: { ...base.ui, ...(d.ui || {}), dashW: { ...base.ui.dashW, ...((d.ui || {}).dashW || {}) } },
   }
   if (!Array.isArray(out.subjects) || !out.subjects.length) out.subjects = ['수학']
   return migrateMemos(out)

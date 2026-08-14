@@ -492,6 +492,32 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
 function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile, alwaysOpen }) {
   const { sessions, perClass, exam } = computed
   const open = alwaysOpen || data.ui.dashOpen
+  const rowRef = useRef(null)
+  const [dragW, setDragW] = useState(null)
+
+  // 카드 사이 손잡이를 끌어 너비를 나눈다. 안쪽 항목은 너비에 맞춰 자동으로 줄을 바꾼다.
+  const startWDrag = (aKey, bKey) => e => {
+    e.preventDefault()
+    const rect = rowRef.current.getBoundingClientRect()
+    const base = { ...(dragW || data.ui.dashW) }
+    const startX = e.clientX
+    const pair = base[aKey] + base[bKey]
+    const move = ev => {
+      const d = ((ev.clientX - startX) / rect.width) * 100
+      const a = Math.min(pair - 8, Math.max(8, base[aKey] + d))
+      setDragW({ ...base, [aKey]: a, [bKey]: pair - a })
+    }
+    const up = () => {
+      document.removeEventListener('mousemove', move)
+      document.removeEventListener('mouseup', up)
+      setDragW(w => {
+        if (w) setUI({ dashW: w })
+        return null
+      })
+    }
+    document.addEventListener('mousemove', move)
+    document.addEventListener('mouseup', up)
+  }
   const todayD = fromISO(today)
   const dateLabel = todayD.getMonth() + 1 + '.' + todayD.getDate() + ' ' + DAYS[todayD.getDay()] + '요일'
 
@@ -520,8 +546,20 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
   const chip = c => ({ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: colorOf(data, c), border: '1px solid rgba(26,26,26,0.16)', flex: 'none' })
   const show = data.cfg.dash
   const tileCount = (show.today ? 1 : 0) + (show.progress ? 1 : 0) + (show.exam ? 1 : 0)
-  // 한 줄에 다 늘어놓으면 읽기 어려우니 3개씩 끊어 배열한다.
-  const cols3 = { display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0,1fr))', gap: '6px 10px' }
+  // 반이 많아도 겹치지 않도록 칸 최소 너비를 정해두고 자동으로 줄을 채운다.
+  const autoCols = { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(104px, 1fr))', gap: '6px 12px' }
+  // 손잡이 폭을 뺀 나머지를 비율대로 나눠 갖는다
+  const rawW = dragW || data.ui.dashW
+  const growOf = k => rawW[k] || 1
+  const handle = (a, b) => (
+    <div
+      onMouseDown={startWDrag(a, b)}
+      title="드래그해서 너비 조절"
+      style={{ width: 10, alignSelf: 'stretch', cursor: 'col-resize', display: 'flex', justifyContent: 'center', flex: 'none' }}
+    >
+      <div style={{ width: 3, borderRadius: 2, background: dragW ? GREEN : 'transparent' }} />
+    </div>
+  )
 
   return (
     <div data-print="hide" style={{ marginBottom: 12, flex: 'none' }}>
@@ -541,19 +579,22 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
       )}
 
       {open && tileCount > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(' + tileCount + ', minmax(0,1fr))', gap: 10 }}>
+        <div
+          ref={rowRef}
+          style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 10 : 0, alignItems: 'stretch' }}
+        >
           {/* 오늘의 수업 */}
           {show.today && (
-            <Tile label="오늘" sub={dateLabel}>
+            <Tile label="오늘" sub={dateLabel} grow={isMobile ? undefined : growOf('today')}>
               {todayRows.length === 0 ? (
                 <div style={{ fontSize: 14, fontWeight: 600, color: FAINT }}>수업 없음</div>
               ) : (
-                <div style={cols3}>
+                <div style={autoCols}>
                   {todayRows.map(r => (
-                    <div key={r.p} style={{ display: 'flex', alignItems: 'baseline', gap: 5, minWidth: 0 }}>
+                    <div key={r.p} style={{ display: 'flex', alignItems: 'baseline', gap: 4, minWidth: 0, flexWrap: 'nowrap' }}>
                       <span style={{ fontSize: 11, color: FAINT, flex: 'none' }}>{r.p}교시</span>
                       <span style={{ ...chip(r.cls), alignSelf: 'center' }} />
-                      <span style={{ fontSize: 13, fontWeight: 700, flex: 'none' }}>{r.cls}</span>
+                      <span style={{ fontSize: 12, fontWeight: 700, minWidth: 0, ...ellipBase }}>{r.cls}</span>
                       {r.canceled ? (
                         <span style={{ fontSize: 11, fontWeight: 700, color: r.perf ? RED : FAINT, ...ellipBase }}>{r.perf ? '수행' : r.reason}</span>
                       ) : (
@@ -566,30 +607,32 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
             </Tile>
           )}
 
+          {!isMobile && show.today && show.progress && handle('today', 'progress')}
+
           {/* 반별 진도 */}
           {show.progress && (
-            <Tile label="진도" sub={data.classes.length + '개 반'}>
+            <Tile label="진도" sub={data.classes.length + '개 반'} grow={isMobile ? undefined : growOf('progress')}>
               {data.classes.length === 0 ? (
                 <div style={{ fontSize: 13, color: FAINT }}>등록된 반이 없습니다</div>
               ) : (
-                <div style={cols3}>
+                <div style={autoCols}>
                   {data.classes.map(c => {
                     const cur = curOf(c)
                     const total = sectionTarget(perClass[c], today)
                     const behind = maxCur - cur
                     return (
-                      <div key={c} style={{ display: 'flex', alignItems: 'baseline', gap: 5, minWidth: 0 }}>
+                      <div key={c} style={{ display: 'flex', alignItems: 'baseline', gap: 4, minWidth: 0, flexWrap: 'nowrap' }}>
                         <span style={{ ...chip(c), alignSelf: 'center' }} />
-                        <span style={{ fontSize: 13, fontWeight: 700, flex: 'none' }}>{c}</span>
-                        <span style={{ fontSize: 18, fontWeight: 700, lineHeight: 1 }}>{cur}</span>
-                        <span style={{ fontSize: 11, color: FAINT }}>/{total}</span>
+                        <span style={{ fontSize: 12, fontWeight: 700, minWidth: 0, ...ellipBase }}>{c}</span>
+                        <span style={{ fontSize: 17, fontWeight: 700, lineHeight: 1, flex: 'none' }}>{cur}</span>
+                        <span style={{ fontSize: 11, color: FAINT, flex: 'none' }}>/{total}</span>
                         {behind > 0 && (
                           <button
                             onClick={() => goBehind(c)}
                             title={'가장 빠른 반보다 ' + behind + '차시 뒤처짐'}
                             style={{
-                              border: 'none', borderRadius: 3, padding: '2px 5px', cursor: 'pointer',
-                              fontSize: 10, fontWeight: 700, color: '#FFFFFF', background: WARN, lineHeight: 1.2, flex: 'none',
+                              border: 'none', borderRadius: 3, padding: '1px 4px', cursor: 'pointer',
+                              fontSize: 10, fontWeight: 700, color: '#FFFFFF', background: WARN, lineHeight: 1.3, flex: 'none',
                             }}
                           >
                             −{behind}
@@ -603,24 +646,17 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
             </Tile>
           )}
 
-          {/* 고사 */}
+          {!isMobile && show.progress && show.exam && handle('progress', 'exam')}
+
+          {/* 고사 — D-day만 크게 */}
           {show.exam && (
-            <Tile label={exam ? exam.name : '고사'} sub={exam ? exam.start.slice(5).replace('-', '.') + ' 시작' : ''}>
+            <Tile label={exam ? exam.name : '고사'} sub={exam ? exam.start.slice(5).replace('-', '.') : ''} grow={isMobile ? undefined : growOf('exam')}>
               {exam ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-                  <div style={{ fontSize: 26, fontWeight: 700, lineHeight: 1, letterSpacing: '-0.02em', flex: 'none' }}>
-                    D-{dday}
-                  </div>
-                  <div style={{ ...cols3, flex: 1, minWidth: 0 }}>
-                    {data.classes.map(c => (
-                      <span key={c} style={{ fontSize: 11, color: SUB, whiteSpace: 'nowrap' }}>
-                        {c} <b style={{ fontSize: 13, fontWeight: 700, color: INK }}>{(perClass[c] || []).filter(x => x.iso > today && x.iso < exam.start).length}</b>
-                      </span>
-                    ))}
-                  </div>
+                <div style={{ fontSize: 26, fontWeight: 700, lineHeight: 1, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
+                  D-{dday}
                 </div>
               ) : (
-                <div style={{ fontSize: 12, color: FAINT }}>일정에 고사를 추가하면 남은 차시를 계산합니다</div>
+                <div style={{ fontSize: 12, color: FAINT }}>일정에 고사 추가</div>
               )}
             </Tile>
           )}
@@ -630,9 +666,14 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
   )
 }
 
-function Tile({ label, sub, children }) {
+function Tile({ label, sub, children, grow }) {
   return (
-    <div style={{ border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', padding: '9px 12px 11px', minWidth: 0 }}>
+    <div
+      style={{
+        border: '1px solid ' + LINE, borderRadius: 8, background: '#FFFFFF', padding: '9px 12px 11px',
+        minWidth: 0, flex: grow ? grow + ' 1 0' : undefined, boxSizing: 'border-box',
+      }}
+    >
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 7 }}>
         <span style={{ fontSize: 11, fontWeight: 700, color: SUB, letterSpacing: '0.04em' }}>{label}</span>
         {sub && <span style={{ fontSize: 11, color: FAINT }}>{sub}</span>}
