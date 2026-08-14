@@ -1,23 +1,27 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { loadData, saveData } from './storage.js'
-import { compute, toISO, GREEN, INK, SUB } from './logic.js'
+import { compute, toISO, GREEN, SUB } from './logic.js'
 import GridView from './views/GridView.jsx'
-import DashView from './views/DashView.jsx'
 import TimetableView from './views/TimetableView.jsx'
 import ScheduleView from './views/ScheduleView.jsx'
 import ImportView from './views/ImportView.jsx'
-import SettingsView from './views/SettingsView.jsx'
-import { Setup1, Setup2 } from './views/SetupView.jsx'
+import SettingsModal from './views/SettingsModal.jsx'
+import HamilModal from './views/HamilModal.jsx'
+import SetupView from './views/SetupView.jsx'
 import Snackbar from './views/Snackbar.jsx'
+import useWindowWidth from './useWindowWidth.js'
 
 export default function App() {
   const [data, setData] = useState(loadData)
   useEffect(() => saveData(data), [data])
 
-  const [view, setView] = useState(() => (loadData().setupDone ? 'grid' : 'setup1'))
+  const { isMobile } = useWindowWidth()
+  const [view, setView] = useState(() => (loadData().setupDone ? 'grid' : 'setup'))
   const [weekOffset, setWeekOffset] = useState(0)
   const [importKind, setImportKind] = useState('timetable')
   const [stagger, setStagger] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [hamilOpen, setHamilOpen] = useState(false)
   const [snack, setSnackState] = useState(null)
   const snackT = useRef()
 
@@ -39,68 +43,88 @@ export default function App() {
 
   const ctx = { data, patch, setData, computed, today, snack, setSnack, go, goImport, weekOffset, setWeekOffset, stagger }
 
-  const headerShown = view !== 'setup1' && view !== 'setup2'
-  const tab = (label, v, weight) => {
-    const active = view === v
-    return (
-      <button
-        key={v}
-        onClick={() => go(v)}
-        className="hov"
-        style={{
-          border: 'none',
-          background: active ? '#F1F0EC' : 'none',
-          borderRadius: '6px 6px 0 0',
-          padding: '7px 14px 13px',
-          marginBottom: -1,
-          fontSize: 14,
-          fontWeight: active ? 700 : weight ?? 500,
-          cursor: 'pointer',
-          color: active ? INK : SUB,
-          borderBottom: '2px solid ' + (active ? GREEN : 'transparent'),
-        }}
-      >
-        {label}
-      </button>
-    )
+  const finishSetup = () => {
+    patch({ setupDone: true })
+    setWeekOffset(0)
+    setStagger(true)
+    setView('grid')
+    setTimeout(() => setStagger(false), 1600)
   }
 
   return (
-    <div style={{ minHeight: '100vh', padding: '28px 48px 110px', boxSizing: 'border-box' }}>
-      {headerShown && (
+    <div style={{ minHeight: '100vh', padding: isMobile ? '16px 14px 90px' : '26px 44px 110px', boxSizing: 'border-box' }}>
+      <div
+        data-print="hide"
+        style={{
+          maxWidth: 1280, margin: '0 auto ' + (isMobile ? 18 : 26) + 'px',
+          display: 'flex', alignItems: 'center', gap: 14, borderBottom: '1px solid #C9C5BE', paddingBottom: 12,
+        }}
+      >
         <div
-          data-print="hide"
-          style={{ maxWidth: 1100, margin: '0 auto 30px', display: 'flex', alignItems: 'baseline', gap: 36, borderBottom: '1px solid #D9D9D9' }}
+          onClick={() => data.setupDone && go('grid')}
+          style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-0.01em', cursor: data.setupDone ? 'pointer' : 'default' }}
         >
-          <div style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-0.01em', paddingBottom: 14 }}>
-            <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: GREEN, marginRight: 9 }} />
-            진도매니저
-          </div>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'baseline' }}>
-            {tab('진도표', 'grid')}
-            {tab('대시보드', 'dash')}
-          </div>
-          <div style={{ flex: 1 }} />
-          {tab('설정', 'settings', 400)}
+          <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: GREEN, marginRight: 9 }} />
+          진도매니저
         </div>
-      )}
+        <div style={{ flex: 1 }} />
+        <button
+          data-intro-hamil
+          onClick={() => setHamilOpen(true)}
+          title="해밀고 데이터 불러오기"
+          style={{
+            border: 'none', borderRadius: 5, background: GREEN, color: '#FFFFFF',
+            fontSize: 12, fontWeight: 700, letterSpacing: '0.02em', padding: '5px 9px', cursor: 'pointer', lineHeight: 1,
+          }}
+        >
+          해밀
+        </button>
+        <button
+          onClick={() => setSettingsOpen(true)}
+          title="설정"
+          className="hov"
+          style={{ border: 'none', background: 'none', padding: 5, borderRadius: 6, cursor: 'pointer', display: 'flex', color: SUB }}
+        >
+          <GearIcon />
+        </button>
+      </div>
 
       {view === 'grid' && <GridView {...ctx} />}
-      {view === 'dash' && <DashView {...ctx} />}
       {view === 'timetable' && <TimetableView {...ctx} />}
       {view === 'schedule' && <ScheduleView {...ctx} />}
       {view === 'import' && <ImportView {...ctx} kind={importKind} />}
-      {view === 'settings' && <SettingsView {...ctx} />}
-      {view === 'setup1' && <Setup1 {...ctx} />}
-      {view === 'setup2' && <Setup2 {...ctx} onStart={() => {
-        patch({ setupDone: true })
-        setWeekOffset(0)
-        setStagger(true)
-        setView('grid')
-        setTimeout(() => setStagger(false), 1600)
-      }} />}
+      {view === 'setup' && <SetupView {...ctx} onStart={finishSetup} />}
+
+      {settingsOpen && (
+        <SettingsModal
+          data={data}
+          setData={setData}
+          computed={computed}
+          today={today}
+          setSnack={setSnack}
+          onClose={() => setSettingsOpen(false)}
+          onResetSetup={() => go('setup')}
+        />
+      )}
+      {hamilOpen && (
+        <HamilModal
+          data={data}
+          setData={setData}
+          setSnack={sn => { setSnack(sn); if (view === 'setup') setView('grid') }}
+          onClose={() => setHamilOpen(false)}
+        />
+      )}
 
       <Snackbar snack={snack} setSnack={setSnack} data={data} setData={setData} />
     </div>
+  )
+}
+
+function GearIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="12" cy="12" r="3.2" />
+      <path d="M19.4 15a1.6 1.6 0 0 0 .32 1.77l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.6 1.6 0 0 0-1.77-.32 1.6 1.6 0 0 0-.97 1.47V21a2 2 0 1 1-4 0v-.09a1.6 1.6 0 0 0-1.05-1.47 1.6 1.6 0 0 0-1.77.32l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.6 1.6 0 0 0 .32-1.77 1.6 1.6 0 0 0-1.47-.97H3a2 2 0 1 1 0-4h.09a1.6 1.6 0 0 0 1.47-1.05 1.6 1.6 0 0 0-.32-1.77l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.6 1.6 0 0 0 1.77.32h.09a1.6 1.6 0 0 0 .97-1.47V3a2 2 0 1 1 4 0v.09a1.6 1.6 0 0 0 .97 1.47 1.6 1.6 0 0 0 1.77-.32l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.6 1.6 0 0 0-.32 1.77v.09a1.6 1.6 0 0 0 1.47.97H21a2 2 0 1 1 0 4h-.09a1.6 1.6 0 0 0-1.47.97z" />
+    </svg>
   )
 }

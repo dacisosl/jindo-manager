@@ -2,14 +2,19 @@
 // 원칙: 차시 번호는 저장하지 않는다. 시간표(pattern) + 일정(events) + 결손(cancels)에서 매번 파생 계산한다.
 
 export const DAYS = '일월화수목금토'
-export const TINTS = ['#E3EDE7', '#E6EBF4', '#F4ECDD', '#F2E7E3', '#EAE6F1', '#E9F0DF']
+
+// 반 색상 팔레트 (스와치 선택용 12색, 뮤트 톤)
+export const TINTS = [
+  '#D5E7DC', '#D3DFF2', '#F2E2C4', '#F0D9CF', '#E0D8EF', '#DFEBCB',
+  '#F0DBE8', '#CFE8E6', '#EDE1CB', '#D8E3D8', '#E6DCEF', '#EFE6C9',
+]
 
 export const GREEN = '#0F5C4D'
 export const INK = '#1A1A1A'
-export const SUB = '#6B6B6B'
-export const FAINT = '#9B9797'
-export const LINE = '#D9D9D9'
-export const LINE_SOFT = '#EFEDE9'
+export const SUB = '#575757'
+export const FAINT = '#8F8B86'
+export const LINE = '#C9C5BE'
+export const LINE_SOFT = '#E4E1DA'
 export const WARN = '#B4552D'
 
 export function toISO(d) {
@@ -30,9 +35,16 @@ export function md(iso) {
   return d.getMonth() + 1 + '.' + d.getDate()
 }
 
-export function tintOf(classes, cls) {
-  const i = classes.indexOf(cls)
+// 반 색: 사용자가 지정한 색 → 없으면 순번 기본색
+export function colorOf(data, cls) {
+  if (data.colors && data.colors[cls]) return data.colors[cls]
+  const i = data.classes.indexOf(cls)
   return i < 0 ? '#FFFFFF' : TINTS[i % TINTS.length]
+}
+
+// 반의 과목: 지정 없으면 첫 과목
+export function subjectOf(data, cls) {
+  return (data.clsSubject && data.clsSubject[cls]) || (data.subjects && data.subjects[0]) || ''
 }
 
 // 기준 고사: 설정에서 고른 고사, 없으면 시작일이 가장 이른 '고사' 일정
@@ -95,6 +107,16 @@ export function compute(data) {
   return { sessions, perClass, exam }
 }
 
+// 목표차시는 따로 설정하지 않는다 — 지금 구간(고사 리셋 반영)의 마지막 차시가 곧 목표.
+export function sectionTarget(list, today) {
+  if (!list || !list.length) return 0
+  let i = -1
+  for (let j = 0; j < list.length; j++) if (list[j].iso <= today) i = j
+  let j = Math.max(i, 0)
+  while (j + 1 < list.length && list[j + 1].num > list[j].num) j++
+  return list[j].num
+}
+
 export function exportCSV(sessions) {
   const lines = [['date', 'period', 'class', 'session'].join(',')]
   Object.keys(sessions)
@@ -108,4 +130,5 @@ export function exportCSV(sessions) {
   a.href = URL.createObjectURL(new Blob(['﻿' + lines.join('\n')], { type: 'text/csv' }))
   a.download = '진도.csv'
   a.click()
+  setTimeout(() => URL.revokeObjectURL(a.href), 10000)
 }

@@ -1,9 +1,11 @@
 import React, { useRef, useState } from 'react'
-import { GREEN, FAINT, INK, LINE, LINE_SOFT, SUB, fromISO, tintOf, DAYS } from '../logic.js'
+import { GREEN, FAINT, INK, LINE, LINE_SOFT, SUB, fromISO, colorOf, DAYS } from '../logic.js'
 import { importTimetable, importSchedule } from '../importer.js'
 import { getApiKey } from '../storage.js'
+import useWindowWidth from '../useWindowWidth.js'
 
 export default function ImportView({ data, setData, go, goImport, setSnack, kind }) {
+  const { isMobile } = useWindowWidth()
   const [stage, setStage] = useState('idle') // idle | loading | review
   const [error, setError] = useState('')
   const [fileName, setFileName] = useState('')
@@ -102,7 +104,7 @@ export default function ImportView({ data, setData, go, goImport, setSnack, kind
       )}
 
       {stage === 'review' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 30, alignItems: 'start' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: isMobile ? 22 : 30, alignItems: 'start' }}>
           <div>
             <div style={{ border: '1px solid ' + LINE, borderRadius: 6, padding: 16, background: '#FFFFFF' }}>
               {imp.preview.kind === 'image' ? (
@@ -143,6 +145,7 @@ export default function ImportView({ data, setData, go, goImport, setSnack, kind
 function TimetableReview({ data, imp, setImp }) {
   const eDays = ['월', '화', '수', '목', '금']
   const classes = [...new Set([...data.classes, ...Object.values(imp.rec)])]
+  const pv = { classes, colors: data.colors } // 새로 인식된 반도 순번 색으로 미리 보이게
   const rows = []
   for (let p = 1; p <= 7; p++) {
     const cells = []
@@ -168,7 +171,7 @@ function TimetableReview({ data, imp, setImp }) {
           style={{
             position: 'relative', minHeight: 42, padding: '8px 12px',
             borderTop: '1px solid ' + LINE_SOFT, borderLeft: '1px solid ' + LINE_SOFT,
-            cursor: 'pointer', background: name && !unc ? tintOf(classes, name) : '#FFFFFF',
+            cursor: 'pointer', background: name && !unc ? colorOf(pv, name) : '#FFFFFF',
           }}
         >
           {unc && <div style={{ position: 'absolute', inset: 3, border: '1px dashed ' + FAINT, borderRadius: 4 }} />}

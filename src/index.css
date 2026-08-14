@@ -12,14 +12,65 @@ body {
 }
 a { color: #0F5C4D; text-decoration: none; }
 a:hover { text-decoration: underline; }
-input, select, button { font-family: inherit; color: inherit; }
-input::placeholder { color: #B9B6B0; }
+input, select, button, textarea { font-family: inherit; color: inherit; }
+input::placeholder, textarea::placeholder { color: #B0ACA5; }
 ::selection { background: rgba(15, 92, 77, 0.15); }
 :focus-visible { outline: 2px solid #0F5C4D; outline-offset: 2px; }
-.hov:hover { background: #F1F0EC; }
-.hov2:hover { background: #FBFAF7; }
+.hov:hover { background: #EFEDE8; }
+.hov2:hover { background: #F7F5F1; }
+
+/* 표가 화면보다 넓으면 표 안에서만 가로 스크롤 */
+.table-scroll { overflow-x: auto; }
+.table-scroll > .table-min { min-width: 640px; }
+
 @media print {
   body { background: #FFFFFF; }
   [data-print='hide'] { display: none !important; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 }
+
+/* intro.js — 앱 톤에 맞춘 덮어쓰기 (딥그린 포인트, 무채색) */
+.introjs-tooltip {
+  font-family: inherit;
+  border-radius: 6px;
+  border: 1px solid #E0DDD6;
+  box-shadow: 0 8px 24px rgba(26, 26, 26, 0.12);
+  background: #FFFFFF;
+  min-width: 260px;
+}
+.introjs-tooltip-title { font-size: 14px; font-weight: 700; color: #1A1A1A; }
+.introjs-tooltiptext { font-size: 13px; color: #575757; line-height: 1.6; }
+.introjs-button {
+  font-family: inherit;
+  font-size: 13px;
+  border-radius: 6px;
+  border: 1px solid #C9C5BE;
+  background: #FFFFFF;
+  color: #1A1A1A;
+  text-shadow: none;
+  padding: 6px 12px;
+}
+.introjs-button:hover, .introjs-button:focus {
+  background: #F7F5F1;
+  border-color: #C9C5BE;
+  color: #1A1A1A;
+  box-shadow: none;
+}
+.introjs-nextbutton, .introjs-donebutton {
+  background: #0F5C4D;
+  border-color: #0F5C4D;
+  color: #FFFFFF;
+}
+.introjs-nextbutton:hover, .introjs-nextbutton:focus,
+.introjs-donebutton:hover, .introjs-donebutton:focus {
+  background: #0C4A3E;
+  border-color: #0C4A3E;
+  color: #FFFFFF;
+}
+.introjs-bullets ul li a { background: #D9D5CE; }
+.introjs-bullets ul li a.active { background: #0F5C4D; }
+.introjs-helperLayer {
+  border-radius: 6px;
+  box-shadow: 0 0 0 2px #0F5C4D, 0 0 0 5000px rgba(26, 26, 26, 0.45) !important;
+}
+.introjs-skipbutton { color: #8F8B86; }
