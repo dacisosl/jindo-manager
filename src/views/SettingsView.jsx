@@ -1,15 +1,31 @@
-import React, { useState } from 'react'
-import { GREEN, FAINT, LINE, SUB, fromISO, exportCSV } from '../logic.js'
-import { getApiKey, setApiKey, getModel, setModel } from '../storage.js'
+import React, { useRef, useState } from 'react'
+import { GREEN, FAINT, LINE, SUB, WARN, fromISO, exportCSV } from '../logic.js'
+import { getApiKey, setApiKey, getModel, setModel, exportJSON, importJSON } from '../storage.js'
 import { checkKey } from '../importer.js'
 
-export default function SettingsView({ data, patch, setData, computed, go }) {
+export default function SettingsView({ data, patch, setData, computed, go, today, setSnack }) {
   const cfg = data.cfg
   const [open, setOpen] = useState({ sem: false, count: true, widgets: false, display: false, file: true, data: false })
   const [key, setKey] = useState(getApiKey)
   const [keyShown, setKeyShown] = useState(false)
   const [model, setModelState] = useState(getModel)
   const [apiStatus, setApiStatus] = useState('')
+  const [dataError, setDataError] = useState('')
+  const jsonRef = useRef()
+
+  const loadFile = async file => {
+    if (!file) return
+    setDataError('')
+    try {
+      const loaded = await importJSON(file)
+      const prev = data
+      setData(loaded)
+      setSnack({ text: '데이터를 불러왔습니다.', kind: 'all', prev })
+    } catch (e) {
+      setDataError(e.message)
+    }
+    jsonRef.current.value = ''
+  }
 
   const setCfg = p => setData(d => ({ ...d, cfg: { ...d.cfg, ...p } }))
   const toggleSec = id => setOpen(o => ({ ...o, [id]: !o[id] }))
@@ -164,8 +180,13 @@ export default function SettingsView({ data, patch, setData, computed, go }) {
 
       <Sec id="data" title="데이터" last>
         <div style={{ padding: '0 0 22px', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14 }}>
-          <button onClick={() => exportCSV(computed.sessions)} style={linkBtn}>진도 데이터 내보내기 (.csv)</button>
+          <button onClick={() => exportJSON(data, today)} style={linkBtn}>전체 데이터 저장 (.json)</button>
+          <button onClick={() => jsonRef.current.click()} style={linkBtn}>저장한 파일 불러오기 (.json)</button>
+          {dataError && <div style={{ fontSize: 13, color: WARN }}>{dataError}</div>}
+          <div style={{ fontSize: 12, color: FAINT }}>불러오면 현재 데이터를 대체합니다. API 키는 파일에 담기지 않습니다.</div>
+          <button onClick={() => exportCSV(computed.sessions)} style={{ ...linkBtn, marginTop: 6 }}>진도 데이터 내보내기 (.csv)</button>
           <button onClick={() => go('setup1')} style={linkBtn}>최초 설정 다시 하기</button>
+          <input ref={jsonRef} type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={e => loadFile(e.target.files[0])} />
         </div>
       </Sec>
     </div>
