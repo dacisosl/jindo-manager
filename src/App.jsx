@@ -53,9 +53,9 @@ export default function App() {
     setTimeout(() => setStagger(false), 1600)
   }
 
-  // 진도표는 데스크톱·모바일 모두 한 화면에 담고(모바일은 탭으로 나뉜다),
-  // 최초 설정은 데스크톱에서만 한 화면에 담는다. 나머지는 자연스럽게 스크롤한다.
-  const fit = view === 'grid' || (view === 'setup' && !isMobile)
+  // 진도표와 최초 설정은 데스크톱·모바일 모두 한 화면에 담는다(모바일은 탭으로 나뉜다).
+  // 나머지 화면은 자연스럽게 스크롤한다.
+  const fit = view === 'grid' || view === 'setup'
 
   return (
     <div

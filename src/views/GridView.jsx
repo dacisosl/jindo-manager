@@ -2,6 +2,7 @@ import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, RED, addDays, fromISO, toISO, colorOf, subjectOf, sectionTarget } from '../logic.js'
 import ContentsPanel from './ContentsPanel.jsx'
 import useWindowWidth from '../useWindowWidth.js'
+import useSplit from '../useSplit.js'
 
 export default function GridView({ data, setData, computed, today, setSnack, go, goImport, weekOffset, setWeekOffset, stagger, fit }) {
   const { sessions, perClass, exam } = computed
@@ -13,10 +14,9 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
   const [mtab, setMtab] = useState('grid') // 모바일 탭: grid | dash | contents
   const [printOpen, setPrintOpen] = useState(false)
   const [printRemember, setPrintRemember] = useState(true)
-  const [dragPct, setDragPct] = useState(null)
   const [gridH, setGridH] = useState(null)
-  const wrapRef = useRef(null)
   const gridRef = useRef(null)
+  const { wrapRef, splitPct, dragging, startDrag } = useSplit(data, setData)
 
   useEffect(() => {
     const close = () => {
@@ -44,22 +44,6 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
 
   const setUI = p => setData(d => ({ ...d, ui: { ...d.ui, ...p } }))
   const showContents = data.ui.contentsOpen
-  const splitPct = Math.min(78, Math.max(38, dragPct ?? data.ui.splitPct))
-
-  const startDrag = e => {
-    e.preventDefault()
-    const rect = wrapRef.current.getBoundingClientRect()
-    const pctOf = x => Math.min(78, Math.max(38, ((x - rect.left) / rect.width) * 100))
-    const move = ev => setDragPct(pctOf(ev.clientX))
-    const up = ev => {
-      document.removeEventListener('mousemove', move)
-      document.removeEventListener('mouseup', up)
-      setDragPct(null)
-      setUI({ splitPct: Math.round(pctOf(ev.clientX)) })
-    }
-    document.addEventListener('mousemove', move)
-    document.addEventListener('mouseup', up)
-  }
 
   const t = fromISO(today)
   const mon0 = addDays(t, 1 - (t.getDay() || 7))
@@ -451,7 +435,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
             title="드래그해서 너비 조절"
             style={{ width: 18, alignSelf: 'stretch', cursor: 'col-resize', display: 'flex', justifyContent: 'center', flex: 'none' }}
           >
-            <div style={{ width: 3, borderRadius: 2, background: dragPct != null ? GREEN : '#DEDAD3' }} />
+            <div style={{ width: 3, borderRadius: 2, background: dragging ? GREEN : '#DEDAD3' }} />
           </div>
         )}
         {showContents && (
