@@ -9,7 +9,7 @@ import useSplit from '../useSplit.js'
 
 // 최초 설정 = 진도표 화면과 같은 골격(윗줄 + 시간표 + 오른쪽 패널).
 // 윗줄만 대시보드 대신 학기 기간이고, 오른쪽 패널은 차시별 내용 대신 일정이다.
-export default function SetupView({ data, patch, setData, computed, setSnack, goImport, onStart, fit }) {
+export default function SetupView({ data, patch, setData, computed, setSnack, goImport, onStart, fit, tourTick }) {
   const { isMobile } = useWindowWidth()
   const { wrapRef, splitPct, dragging, startDrag } = useSplit(data, setData)
   const [mtab, setMtab] = useState('grid') // 모바일 탭: grid | sched
@@ -50,6 +50,11 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
     }
   }, [])
 
+  // 상단 바의 안내 버튼
+  useEffect(() => {
+    if (tourTick) startTour()
+  }, [tourTick])
+
   const ok = data.semStart && data.semEnd && data.semStart < data.semEnd && Object.keys(data.pattern).length > 0
 
   const semFields = (
@@ -62,9 +67,19 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
 
   const timetable = <TimetableEditor data={data} setData={setData} cellHeight={fit ? 0 : 42} compact fill={fit} />
 
+  // 두 칼럼의 첫 줄(학기 / 일정)을 같은 높이로 맞춘다
+  const rowStyle = { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flex: 'none', height: 32, boxSizing: 'border-box' }
+
+  const semRow = (
+    <div style={rowStyle}>
+      <div style={{ ...SECTION_TITLE, flex: 'none' }}>학기</div>
+      {semFields}
+    </div>
+  )
+
   const schedule = (
     <div data-intro-sched style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingBottom: 8, flex: 'none' }}>
+      <div style={rowStyle}>
         <span style={SECTION_TITLE}>일정</span>
         <div style={{ flex: 1 }} />
         <button onClick={() => goImport('schedule')} style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 12, color: GREEN }}>
@@ -74,20 +89,6 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
       <div style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', padding: '0 12px 10px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
         <ScheduleEditor data={data} setData={setData} computed={computed} setSnack={setSnack} fill />
       </div>
-    </div>
-  )
-
-  const header = (
-    <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingBottom: 10, flex: 'none', flexWrap: isMobile ? 'wrap' : 'nowrap' }}>
-      <div style={{ ...SECTION_TITLE, flex: 'none' }}>학기</div>
-      {semFields}
-      <div style={{ flex: 1 }} />
-      <button onClick={() => goImport('timetable')} style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: GREEN, flex: 'none' }}>
-        파일에서 가져오기
-      </button>
-      <button onClick={startTour} style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: SUB, flex: 'none' }}>
-        안내
-      </button>
     </div>
   )
 
@@ -109,7 +110,7 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
     )
     return (
       <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-        {header}
+        {semRow}
         <div style={{ display: 'flex', gap: 3, background: '#EFEDE8', borderRadius: 8, padding: 3, marginBottom: 10, flex: 'none' }}>
           {tab('grid', '시간표')}
           {tab('sched', '일정')}
@@ -121,9 +122,9 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
 
   return (
     <div style={{ width: '100%', maxWidth: 1320, margin: '0 auto', height: fit ? '100%' : undefined, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      {header}
       <div ref={wrapRef} style={{ display: 'flex', alignItems: 'stretch', flex: fit ? 1 : undefined, minHeight: fit ? 300 : 0 }}>
         <div style={{ width: splitPct + '%', minWidth: 0, flex: 'none', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          {semRow}
           {timetable}
         </div>
         <div

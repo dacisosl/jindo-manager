@@ -235,7 +235,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
             borderTop: '1px solid ' + LINE_SOFT, borderLeft: '1px solid ' + LINE_SOFT,
             cursor: clickable ? 'pointer' : 'default',
             boxShadow: day.isToday ? 'inset 1px 0 0 rgba(15,92,77,0.4), inset -1px 0 0 rgba(15,92,77,0.4)' : 'none',
-            background: s && (!s.canceled || perf) ? colorOf(data, s.cls) : '#FFFFFF',
+            background: s && !s.canceled ? colorOf(data, s.cls) : '#FFFFFF',
           }}
         >
           {/* 윗줄: 반은 왼쪽, 차시는 오른쪽 끝 — 숫자가 한 열로 정렬돼 훑기 쉽다 */}
@@ -247,10 +247,11 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
                 position: 'relative',
               }}
             >
-              {s.canceled && !perf && (
+              {/* 결손·수행평가 모두 차시를 쓰지 않으므로 같은 빗금 배경을 쓴다 */}
+              {s.canceled && (
                 <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(45deg,transparent 0,transparent 5px,rgba(26,26,26,0.06) 5px,rgba(26,26,26,0.06) 6px)' }} />
               )}
-              <span style={{ ...ellip(isMobile ? 10 : 12, 600), color: s.canceled && !perf ? FAINT : SUB, minWidth: 0, position: 'relative' }}>{s.cls}</span>
+              <span style={{ ...ellip(isMobile ? 10 : 12, 600), color: s.canceled ? FAINT : SUB, minWidth: 0, position: 'relative' }}>{s.cls}</span>
               <div style={{ flex: 1 }} />
               {!s.canceled && mkNum(s.num)}
               {perf && (
@@ -348,11 +349,12 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
       {printButton}
       <div style={{ flex: 1 }} />
       <div data-print="hide" style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
-        <button onClick={() => { setWeekOffset(weekOffset - 1); setPop(null) }} title="이전 주" style={navBtn('arrow')}>‹</button>
-        <button onClick={() => { setWeekOffset(0); setPop(null) }} style={navBtn('text')}>오늘</button>
-        <button onClick={() => { setWeekOffset(weekOffset + 1); setPop(null) }} title="다음 주" style={navBtn('arrow')}>›</button>
+        <button className="hov" onClick={() => { setWeekOffset(weekOffset - 1); setPop(null) }} title="이전 주" style={navBtn('arrow')}>‹</button>
+        <button className="hov" onClick={() => { setWeekOffset(0); setPop(null) }} style={navBtn('text')}>오늘</button>
+        <button className="hov" onClick={() => { setWeekOffset(weekOffset + 1); setPop(null) }} title="다음 주" style={navBtn('arrow')}>›</button>
         <div style={{ position: 'relative' }}>
           <button
+            className="hov"
             onClick={e => { e.stopPropagation(); setMenuOpen(!menuOpen); setPop(null) }}
             title="메뉴"
             style={{ ...navBtn('text'), letterSpacing: '0.05em' }}
@@ -453,9 +455,19 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
           </div>
         )}
         {mtab === 'contents' && (
-          <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-            <ContentsPanel data={data} setData={setData} computed={computed} today={today} active={activeSubject} setActive={setActiveSubject} height="100%" focusNum={focusNum} weekRange={weekRange} />
-          </div>
+          <>
+            {/* 음영 구간이 주차에 따라 달라지므로 여기서도 주를 옮길 수 있어야 한다 */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flex: 'none', height: 32, boxSizing: 'border-box' }}>
+              <div style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em' }}>{weekLabel}</div>
+              <div style={{ flex: 1 }} />
+              <button className="hov" onClick={() => setWeekOffset(weekOffset - 1)} title="이전 주" style={navBtn('arrow')}>‹</button>
+              <button className="hov" onClick={() => setWeekOffset(0)} style={navBtn('text')}>오늘</button>
+              <button className="hov" onClick={() => setWeekOffset(weekOffset + 1)} title="다음 주" style={navBtn('arrow')}>›</button>
+            </div>
+            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+              <ContentsPanel data={data} setData={setData} computed={computed} today={today} active={activeSubject} setActive={setActiveSubject} height="100%" focusNum={focusNum} weekRange={weekRange} />
+            </div>
+          </>
         )}
         {popover}
       </div>
@@ -575,7 +587,6 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
       {!alwaysOpen && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: open ? 7 : 0 }}>
           <span style={SECTION_TITLE}>요약</span>
-          <span style={{ fontSize: 13, color: SUB, fontWeight: 500 }}>{dateLabel}</span>
           <button
             onClick={() => setUI({ dashOpen: !open })}
             title={open ? '접기' : '펴기'}
@@ -736,7 +747,7 @@ const ellip = (size, weight) => ({ fontSize: size, fontWeight: weight, lineHeigh
 const menuItem = first => ({ padding: first ? '9px 14px' : '9px 14px', fontSize: 14, cursor: 'pointer', fontWeight: first ? 600 : 400 })
 const linkBtn = { border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: GREEN }
 const navBtn = kind => ({
-  border: 'none', background: '#EFEDE8', borderRadius: 6, cursor: 'pointer', color: SUB,
-  padding: kind === 'arrow' ? '3px 11px 5px' : '6px 10px',
+  border: 'none', background: 'none', borderRadius: 6, cursor: 'pointer', color: SUB,
+  padding: kind === 'arrow' ? '3px 9px 5px' : '6px 9px',
   fontSize: kind === 'arrow' ? 19 : 13, fontWeight: kind === 'arrow' ? 400 : 600, lineHeight: 1,
 })

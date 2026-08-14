@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { loadData, saveData } from './storage.js'
-import { compute, toISO, GREEN, SUB } from './logic.js'
+import { compute, toISO, fromISO, DAYS, GREEN, SUB } from './logic.js'
 import GridView from './views/GridView.jsx'
 import ImportView from './views/ImportView.jsx'
 import SettingsModal from './views/SettingsModal.jsx'
@@ -24,10 +24,13 @@ export default function App() {
   const [stagger, setStagger] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [hamilOpen, setHamilOpen] = useState(false)
+  const [tourTick, setTourTick] = useState(0) // 상단 바의 안내 버튼 → 설정 화면 투어 시작
   const [snack, setSnackState] = useState(null)
   const snackT = useRef()
 
   const today = toISO(new Date())
+  const todayD = fromISO(today)
+  const todayLabel = todayD.getMonth() + 1 + '.' + todayD.getDate() + ' ' + DAYS[todayD.getDay()] + '요일'
   const computed = useMemo(() => compute(data), [data])
 
   const patch = p => setData(d => ({ ...d, ...p }))
@@ -89,9 +92,12 @@ export default function App() {
           <span style={{ display: 'inline-block', width: 6, height: isMobile ? 19 : 22, borderRadius: 2, background: GREEN, flex: 'none' }} />
           진도계획표
         </div>
+        <div style={{ fontSize: 13, fontWeight: 500, color: SUB, whiteSpace: 'nowrap' }}>{todayLabel}</div>
         <div style={{ flex: 1 }} />
         {view === 'setup' ? (
           <>
+            <button onClick={() => goImport('timetable')} style={navLink(GREEN)}>파일에서 가져오기</button>
+            <button onClick={() => setTourTick(t => t + 1)} style={navLink(SUB)}>안내</button>
             <button
               data-intro-hamil
               onClick={() => setHamilOpen(true)}
@@ -140,7 +146,7 @@ export default function App() {
       <div style={{ flex: fit ? 1 : undefined, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: fit ? 'auto' : undefined }}>
         {view === 'grid' && <GridView {...ctx} fit={fit} />}
         {view === 'import' && <ImportView {...ctx} kind={importKind} />}
-        {view === 'setup' && <SetupView {...ctx} fit={fit} onStart={finishSetup} />}
+        {view === 'setup' && <SetupView {...ctx} fit={fit} tourTick={tourTick} onStart={finishSetup} />}
       </div>
 
       {settingsOpen && (
@@ -169,6 +175,8 @@ export default function App() {
 }
 
 // 학교 로고: public/haemil.png 가 있으면 그 이미지를, 없으면 글자 배지를 쓴다.
+const navLink = color => ({ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color, whiteSpace: 'nowrap' })
+
 function HamilMark() {
   const [failed, setFailed] = useState(false)
   if (failed) {
