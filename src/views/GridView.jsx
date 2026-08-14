@@ -205,6 +205,8 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
     }
   })
   const focusNum = weekNums.length ? Math.round(weekNums.reduce((a, b) => a + b, 0) / weekNums.length) : null
+  // 그 주의 최소~최대 차시를 한 덩어리로 표시한다
+  const weekRange = weekNums.length ? { min: Math.min(...weekNums), max: Math.max(...weekNums) } : null
 
   const rows = []
   for (let p = 1; p <= 7; p++) {
@@ -219,6 +221,8 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
           key={key}
           onClick={clickable ? e => {
             e.stopPropagation()
+            // 칸을 누르면 차시별 내용도 그 반의 과목으로 따라간다
+            if (s) setActiveSubject(subjectOf(data, s.cls))
             // 표가 overflow:hidden 이라 팝오버는 화면 좌표로 띄운다
             const r = e.currentTarget.getBoundingClientRect()
             setPop({ key, mode: 'menu', draft: cont, x: r.left, y: r.bottom })
@@ -238,36 +242,40 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
           {s && (
             <div
               style={{
-                display: 'flex', alignItems: 'baseline', gap: 5, minWidth: 0, flex: 1,
-                padding: isMobile ? '5px 5px 3px' : '6px 9px 4px',
-                justifyContent: isMobile ? 'center' : 'flex-start',
+                display: 'flex', alignItems: 'baseline', gap: isMobile ? 3 : 5, minWidth: 0, flex: 1,
+                padding: isMobile ? '4px 5px 2px' : '6px 9px 4px',
                 position: 'relative',
               }}
             >
               {s.canceled && !perf && (
                 <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(45deg,transparent 0,transparent 5px,rgba(26,26,26,0.06) 5px,rgba(26,26,26,0.06) 6px)' }} />
               )}
-              <span style={{ ...ellip(isMobile ? 11 : 12, 600), color: s.canceled && !perf ? FAINT : SUB, flex: 'none', position: 'relative' }}>{s.cls}</span>
-              {!isMobile && <div style={{ flex: 1 }} />}
+              <span style={{ ...ellip(isMobile ? 10 : 12, 600), color: s.canceled && !perf ? FAINT : SUB, minWidth: 0, position: 'relative' }}>{s.cls}</span>
+              <div style={{ flex: 1 }} />
               {!s.canceled && mkNum(s.num)}
               {perf && (
-                <span style={{ fontSize: isMobile ? 10 : 12, fontWeight: 700, color: RED, position: 'relative', ...ellipBase }}>수행평가</span>
+                <span style={{ fontSize: isMobile ? 10 : 12, fontWeight: 700, color: RED, position: 'relative', flex: 'none' }}>{isMobile ? '수행' : '수행평가'}</span>
               )}
               {s.canceled && !perf && (
-                <span style={{ fontSize: isMobile ? 10 : 12, color: SUB, position: 'relative', ...ellipBase }}>{s.reason}</span>
+                <span style={{ fontSize: isMobile ? 9 : 12, color: SUB, position: 'relative', minWidth: 0, ...ellipBase }}>{s.reason}</span>
               )}
             </div>
           )}
           {/* 아랫단: 내용은 옅은 흰 띠 위에 — 선을 긋지 않고 면으로 나눈다 */}
-          {s && !s.canceled && !isMobile && (
-            <div style={{ background: 'rgba(255,255,255,0.62)', padding: '3px 9px 4px', flex: 'none' }}>
-              <input
-                value={cont}
-                onChange={e => setContent(s.cls, s.num, e.target.value)}
-                onClick={e => e.stopPropagation()}
-                placeholder="내용"
-                style={{ width: '100%', boxSizing: 'border-box', border: 'none', background: 'transparent', fontSize: 12, color: INK, padding: 0, minWidth: 0 }}
-              />
+          {s && !s.canceled && (isMobile ? !!cont : true) && (
+            <div style={{ background: 'rgba(255,255,255,0.62)', padding: isMobile ? '2px 5px 3px' : '3px 9px 4px', flex: 'none' }}>
+              {isMobile ? (
+                <div style={{ fontSize: 10, color: INK, ...ellipBase }}>{cont}</div>
+              ) : (
+                <input
+                  value={cont}
+                  onChange={e => setContent(s.cls, s.num, e.target.value)}
+                  onFocus={() => setActiveSubject(subjectOf(data, s.cls))}
+                  onClick={e => e.stopPropagation()}
+                  placeholder="내용"
+                  style={{ width: '100%', boxSizing: 'border-box', border: 'none', background: 'transparent', fontSize: 12, color: INK, padding: 0, minWidth: 0 }}
+                />
+              )}
             </div>
           )}
         </div>
@@ -293,8 +301,8 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
       <button
         onClick={e => { e.stopPropagation(); setPrintOpen(!printOpen); setPop(null); setMenuOpen(false) }}
         style={{
-          display: 'flex', alignItems: 'center', gap: 5, border: 'none', borderRadius: 6,
-          background: GREEN, color: '#FFFFFF', padding: '6px 12px', cursor: 'pointer', fontSize: 13, fontWeight: 700, lineHeight: 1,
+          display: 'flex', alignItems: 'center', gap: 5, border: '1px solid #CBDED7', borderRadius: 6,
+          background: '#EAF1EE', color: GREEN, padding: '6px 12px', cursor: 'pointer', fontSize: 13, fontWeight: 700, lineHeight: 1,
         }}
       >
         <PrinterIcon />
@@ -332,21 +340,22 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
     </div>
   )
 
+  // 시간표 칼럼 안에 두어야 차시별 내용 제목줄과 높이가 맞는다
   const toolbar = (
-    <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 12, paddingBottom: 8, flex: 'none' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 12, marginBottom: 8, flex: 'none', height: 32, boxSizing: 'border-box' }}>
       <div style={{ fontSize: isMobile ? 15 : 16, fontWeight: 700, letterSpacing: '-0.01em' }}>{weekLabel}</div>
       {!isMobile && <div style={{ fontSize: 12, color: FAINT }}>{semLabel}</div>}
       {printButton}
       <div style={{ flex: 1 }} />
-      <div data-print="hide" style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
-        <button className="hov" onClick={() => { setWeekOffset(weekOffset - 1); setPop(null) }} style={navBtn(15)}>‹</button>
-        <button className="hov" onClick={() => { setWeekOffset(0); setPop(null) }} style={navBtn(13)}>오늘</button>
-        <button className="hov" onClick={() => { setWeekOffset(weekOffset + 1); setPop(null) }} style={navBtn(15)}>›</button>
+      <div data-print="hide" style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+        <button onClick={() => { setWeekOffset(weekOffset - 1); setPop(null) }} title="이전 주" style={navBtn('arrow')}>‹</button>
+        <button onClick={() => { setWeekOffset(0); setPop(null) }} style={navBtn('text')}>오늘</button>
+        <button onClick={() => { setWeekOffset(weekOffset + 1); setPop(null) }} title="다음 주" style={navBtn('arrow')}>›</button>
         <div style={{ position: 'relative' }}>
           <button
-            className="hov"
             onClick={e => { e.stopPropagation(); setMenuOpen(!menuOpen); setPop(null) }}
-            style={{ ...navBtn(15), letterSpacing: '0.05em' }}
+            title="메뉴"
+            style={{ ...navBtn('text'), letterSpacing: '0.05em' }}
           >
             ⋯
           </button>
@@ -367,7 +376,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
             className="hov"
             style={{
               display: 'flex', alignItems: 'center', gap: 5, marginLeft: 6, border: 'none', borderRadius: 6,
-              background: 'none', color: SUB, padding: '5px 8px', cursor: 'pointer', fontSize: 13, fontWeight: 600, lineHeight: 1, whiteSpace: 'nowrap',
+              background: '#EFEDE8', color: SUB, padding: '6px 10px', cursor: 'pointer', fontSize: 13, fontWeight: 600, lineHeight: 1, whiteSpace: 'nowrap',
             }}
           >
             <PanelIcon open={false} />
@@ -445,7 +454,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
         )}
         {mtab === 'contents' && (
           <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-            <ContentsPanel data={data} setData={setData} computed={computed} today={today} active={activeSubject} setActive={setActiveSubject} height="100%" focusNum={focusNum} weekNums={weekNums} />
+            <ContentsPanel data={data} setData={setData} computed={computed} today={today} active={activeSubject} setActive={setActiveSubject} height="100%" focusNum={focusNum} weekRange={weekRange} />
           </div>
         )}
         {popover}
@@ -456,10 +465,10 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
   return (
     <div style={{ width: '100%', maxWidth: 1320, margin: '0 auto', height: fit ? '100%' : undefined, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       <DashStrip data={data} computed={computed} today={today} setUI={setUI} setWeekOffset={setWeekOffset} mon0={mon0} isMobile={isMobile} />
-      {toolbar}
 
       <div ref={wrapRef} style={{ display: 'flex', alignItems: fit ? 'stretch' : 'flex-start', flex: fit ? 1 : undefined, minHeight: fit ? 300 : 0 }}>
         <div style={{ width: showContents ? splitPct + '%' : '100%', minWidth: 0, flex: 'none', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+          {toolbar}
           <div style={{ flex: fit ? 1 : undefined, minHeight: 0 }}>{table}</div>
           {exam && toISO(fri) < exam.start && !fit && (
             <div style={{ marginTop: 20, borderTop: '1px solid ' + LINE, paddingTop: 8, fontSize: 12, color: FAINT }}>
@@ -479,7 +488,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
         )}
         {showContents && (
           <div data-print="hide" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            <ContentsPanel data={data} setData={setData} computed={computed} today={today} active={activeSubject} setActive={setActiveSubject} height={fit ? '100%' : gridH} focusNum={focusNum} weekNums={weekNums} onCollapse={() => setUI({ contentsOpen: false })} />
+            <ContentsPanel data={data} setData={setData} computed={computed} today={today} active={activeSubject} setActive={setActiveSubject} height={fit ? '100%' : gridH} focusNum={focusNum} weekRange={weekRange} onCollapse={() => setUI({ contentsOpen: false })} />
           </div>
         )}
       </div>
@@ -564,17 +573,19 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
   return (
     <div data-print="hide" style={{ marginBottom: 12, flex: 'none' }}>
       {!alwaysOpen && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: open ? 7 : 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: open ? 7 : 0 }}>
           <span style={SECTION_TITLE}>요약</span>
+          <span style={{ fontSize: 13, color: SUB, fontWeight: 500 }}>{dateLabel}</span>
           <button
             onClick={() => setUI({ dashOpen: !open })}
             title={open ? '접기' : '펴기'}
-            className="hov"
-            style={{ border: 'none', background: 'none', padding: '3px 5px', borderRadius: 5, cursor: 'pointer', color: FAINT, display: 'flex', alignItems: 'center' }}
+            style={{
+              border: 'none', background: '#EFEDE8', padding: '5px 8px', borderRadius: 6, cursor: 'pointer',
+              color: SUB, display: 'flex', alignItems: 'center', lineHeight: 1,
+            }}
           >
             <Chevron open={open} />
           </button>
-          {!open && <span style={{ fontSize: 12, color: FAINT }}>{dateLabel}</span>}
         </div>
       )}
 
@@ -706,7 +717,7 @@ function PanelIcon({ open }) {
 
 function Chevron({ open }) {
   return (
-    <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round" style={{ transform: open ? 'none' : 'rotate(-90deg)', transition: 'transform 150ms' }}>
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3.2" strokeLinecap="round" strokeLinejoin="round" style={{ transform: open ? 'none' : 'rotate(-90deg)', transition: 'transform 150ms' }}>
       <polyline points="5 9 12 16 19 9" />
     </svg>
   )
@@ -724,4 +735,8 @@ const ellipBase = { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'n
 const ellip = (size, weight) => ({ fontSize: size, fontWeight: weight, lineHeight: 1.3, ...ellipBase })
 const menuItem = first => ({ padding: first ? '9px 14px' : '9px 14px', fontSize: 14, cursor: 'pointer', fontWeight: first ? 600 : 400 })
 const linkBtn = { border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: GREEN }
-const navBtn = fs => ({ border: 'none', background: 'none', padding: fs === 15 ? '3px 9px' : '4px 9px', borderRadius: 6, cursor: 'pointer', fontSize: fs, lineHeight: 1 })
+const navBtn = kind => ({
+  border: 'none', background: '#EFEDE8', borderRadius: 6, cursor: 'pointer', color: SUB,
+  padding: kind === 'arrow' ? '3px 11px 5px' : '6px 10px',
+  fontSize: kind === 'arrow' ? 19 : 13, fontWeight: kind === 'arrow' ? 400 : 600, lineHeight: 1,
+})

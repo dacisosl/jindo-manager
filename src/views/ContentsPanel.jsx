@@ -3,12 +3,12 @@ import { GREEN, INK, FAINT, LINE, LINE_SOFT, SUB, SECTION_TITLE, subjectOf } fro
 
 // 차시별 내용: 과목 탭 아래 차시 번호별 입력.
 // 여기 적은 내용이 진도표의 같은 차시 칸에 그대로 표시된다 (저장소는 contents 하나).
-export default function ContentsPanel({ data, setData, computed, today, active, setActive, height, focusNum, weekNums, onCollapse }) {
+export default function ContentsPanel({ data, setData, computed, today, active, setActive, height, focusNum, weekRange, onCollapse }) {
   const scrollRef = useRef(null)
   const [adding, setAdding] = useState(false)
   const [newSubj, setNewSubj] = useState('')
-  const [renaming, setRenaming] = useState(false)
-  const [renameVal, setRenameVal] = useState('')
+  const [editMode, setEditMode] = useState(false)
+  const [drafts, setDrafts] = useState({})
 
   const subj = data.subjects.includes(active) ? active : data.subjects[0]
   const subjClasses = data.classes.filter(c => subjectOf(data, c) === subj)
@@ -44,35 +44,48 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
     setNewSubj('')
   }
 
-  const renameSubject = () => {
-    const v = renameVal.trim()
-    if (v && v !== subj && !data.subjects.includes(v)) {
-      setData(d => {
-        const contents = { ...d.contents }
-        if (contents[subj]) {
-          contents[v] = contents[subj]
-          delete contents[subj]
-        }
-        const clsSubject = { ...d.clsSubject }
-        Object.keys(clsSubject).forEach(c => { if (clsSubject[c] === subj) clsSubject[c] = v })
-        return { ...d, subjects: d.subjects.map(s => (s === subj ? v : s)), contents, clsSubject }
-      })
-      setActive(v)
-    }
-    setRenaming(false)
+  const openEdit = () => {
+    setDrafts(Object.fromEntries(data.subjects.map(s => [s, s])))
+    setEditMode(true)
   }
 
-  const deleteSubject = () => {
+  // 과목 이름을 한꺼번에 고친다. 내용과 반-과목 연결도 새 이름으로 함께 옮긴다.
+  const applyEdit = () => {
+    setData(d => {
+      const map = {}
+      const taken = []
+      d.subjects.forEach(s => {
+        const v = (drafts[s] ?? s).trim()
+        const ok = v && !taken.includes(v)
+        map[s] = ok ? v : s
+        taken.push(map[s])
+      })
+      const contents = {}
+      Object.entries(d.contents).forEach(([k, v]) => { contents[map[k] || k] = v })
+      const clsSubject = {}
+      Object.entries(d.clsSubject).forEach(([c, s]) => { clsSubject[c] = map[s] || s })
+      setActive(map[subj] || subj)
+      return { ...d, subjects: d.subjects.map(s => map[s]), contents, clsSubject }
+    })
+    setEditMode(false)
+  }
+
+  const deleteSubject = s => {
     if (data.subjects.length <= 1) return
     setData(d => {
-      const subjects = d.subjects.filter(s => s !== subj)
+      const subjects = d.subjects.filter(x => x !== s)
       const contents = { ...d.contents }
-      delete contents[subj]
+      delete contents[s]
       const clsSubject = { ...d.clsSubject }
-      Object.keys(clsSubject).forEach(c => { if (clsSubject[c] === subj) clsSubject[c] = subjects[0] })
+      Object.keys(clsSubject).forEach(c => { if (clsSubject[c] === s) clsSubject[c] = subjects[0] })
       return { ...d, subjects, contents, clsSubject }
     })
-    setActive(data.subjects.filter(s => s !== subj)[0])
+    setDrafts(p => {
+      const n = { ...p }
+      delete n[s]
+      return n
+    })
+    if (subj === s) setActive(data.subjects.filter(x => x !== s)[0])
   }
 
   // 보고 있는 주의 차시를 패널 가운데로 옮긴다 — 주를 넘길 때마다 따라온다.
@@ -85,19 +98,23 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
     el.scrollTop = Math.max(0, row.offsetTop - (el.clientHeight - row.offsetHeight) / 2)
   }, [focusNum, subj, height])
 
-  const week = new Set(weekNums || [])
   const rows = []
   for (let n = 1; n <= rowCount; n++) {
     const isCur = n === curNum
-    const inWeek = week.has(n)
+    // 보고 있는 주의 최소~최대 차시를 한 덩어리로 음영 처리
+    const inWeek = !!(weekRange && n >= weekRange.min && n <= weekRange.max)
+    const first = !!(weekRange && n === weekRange.min)
+    const last = !!(weekRange && n === weekRange.max)
     rows.push(
       <div
         key={n}
         data-row={n}
         style={{
-          display: 'flex', alignItems: 'baseline', gap: 10, padding: '5px 6px', borderBottom: '1px solid ' + LINE_SOFT,
-          background: inWeek ? 'rgba(15,92,77,0.05)' : 'transparent',
-          borderRadius: inWeek ? 4 : 0,
+          display: 'flex', alignItems: 'baseline', gap: 10, padding: '5px 6px',
+          borderBottom: inWeek && !last ? '1px solid rgba(15,92,77,0.10)' : '1px solid ' + LINE_SOFT,
+          background: inWeek ? 'rgba(15,92,77,0.06)' : 'transparent',
+          borderRadius: first && last ? 5 : first ? '5px 5px 0 0' : last ? '0 0 5px 5px' : 0,
+          boxShadow: inWeek ? 'inset 2px 0 0 rgba(15,92,77,0.35)' : 'none',
         }}
       >
         <div style={{ width: 26, textAlign: 'right', fontSize: 13, fontWeight: isCur || inWeek ? 700 : 400, color: isCur ? GREEN : inWeek ? INK : FAINT, flex: 'none' }}>{n}</div>
@@ -116,63 +133,76 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
 
   const tabBtn = s => {
     const on = s === subj
-    if (renaming === s) {
+    if (editMode) {
       return (
-        <span key={s} style={{ display: 'inline-flex', alignItems: 'center', gap: 6, flex: 'none' }}>
+        <span key={s} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flex: 'none' }}>
           <input
-            value={renameVal}
-            onChange={e => setRenameVal(e.target.value)}
+            value={drafts[s] ?? s}
+            onChange={e => setDrafts(p => ({ ...p, [s]: e.target.value }))}
             onKeyDown={e => {
-              if (e.key === 'Enter') renameSubject()
-              if (e.key === 'Escape') setRenaming(null)
+              if (e.key === 'Enter') applyEdit()
+              if (e.key === 'Escape') setEditMode(false)
             }}
-            autoFocus
-            style={{ width: 78, border: '1px solid ' + LINE, borderRadius: 5, background: '#FFFFFF', fontSize: 13, padding: '3px 6px' }}
+            style={{ width: 74, border: '1px solid ' + LINE, borderRadius: 5, background: '#FFFFFF', fontSize: 13, padding: '3px 6px' }}
           />
-          <button onClick={renameSubject} style={{ ...miniBtn, color: GREEN, fontWeight: 700 }}>저장</button>
-          {data.subjects.length > 1 && <button onClick={deleteSubject} style={miniBtn}>삭제</button>}
+          {data.subjects.length > 1 && (
+            <button onClick={() => deleteSubject(s)} title="과목 삭제" style={{ ...miniBtn, fontSize: 14, lineHeight: 1 }}>×</button>
+          )}
         </span>
       )
     }
     return (
-      <span key={s} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, flex: 'none' }}>
-        <button
-          onClick={() => { setActive(s); setRenaming(s); setRenameVal(s) }}
-          title="과목 이름 수정"
-          style={{ border: 'none', background: 'none', padding: 2, cursor: 'pointer', color: on ? SUB : FAINT, display: 'flex', alignItems: 'center' }}
-        >
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M12 20h9" />
-            <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
-          </svg>
-        </button>
-        <button
-          onClick={() => setActive(s)}
-          style={{
-            border: 'none', background: 'none', padding: '2px 2px 4px', cursor: 'pointer', fontSize: 14,
-            fontWeight: on ? 700 : 500, color: on ? INK : SUB,
-            borderBottom: '2px solid ' + (on ? GREEN : 'transparent'),
-          }}
-        >
-          {s}
-        </button>
-      </span>
+      <button
+        key={s}
+        onClick={() => setActive(s)}
+        style={{
+          border: 'none', background: 'none', padding: '2px 2px 4px', cursor: 'pointer', fontSize: 14, flex: 'none',
+          fontWeight: on ? 700 : 500, color: on ? INK : SUB,
+          borderBottom: '2px solid ' + (on ? GREEN : 'transparent'),
+        }}
+      >
+        {s}
+      </button>
     )
   }
 
   return (
     <div style={{ height: height || undefined, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 8, flex: 'none' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flex: 'none', height: 32, boxSizing: 'border-box' }}>
         <span style={SECTION_TITLE}>차시별 내용</span>
         <div style={{ flex: 1 }} />
+        {editMode ? (
+          <button
+            onClick={applyEdit}
+            style={{
+              border: 'none', borderRadius: 6, background: GREEN, color: '#FFFFFF',
+              padding: '6px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 700, lineHeight: 1,
+            }}
+          >
+            완료
+          </button>
+        ) : (
+          <button
+            onClick={openEdit}
+            title="과목 이름 한꺼번에 수정"
+            style={{
+              display: 'flex', alignItems: 'center', border: 'none', borderRadius: 6, background: '#EFEDE8',
+              padding: '6px 9px', cursor: 'pointer', color: SUB, lineHeight: 1,
+            }}
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
+            </svg>
+          </button>
+        )}
         {onCollapse && (
           <button
             onClick={onCollapse}
             title="접기"
-            className="hov"
             style={{
-              display: 'flex', alignItems: 'center', gap: 3, border: 'none', borderRadius: 5, background: 'none',
-              padding: '3px 6px', cursor: 'pointer', color: SUB, fontSize: 12, fontWeight: 600,
+              display: 'flex', alignItems: 'center', gap: 4, border: 'none', borderRadius: 6, background: '#EFEDE8',
+              padding: '6px 10px', cursor: 'pointer', color: SUB, fontSize: 12, fontWeight: 600, lineHeight: 1,
             }}
           >
             접기
