@@ -1,10 +1,11 @@
 import React, { useRef, useState } from 'react'
-import { GREEN, FAINT, LINE, SUB, WARN, exportCSV } from '../logic.js'
-import { getApiKey, setApiKey, getModel, setModel, exportJSON, importJSON } from '../storage.js'
+import { GREEN, FAINT, LINE, SUB, WARN, RED, exportCSV } from '../logic.js'
+import { getApiKey, setApiKey, getModel, setModel, exportJSON, importJSON, defaultData } from '../storage.js'
 import { checkKey } from '../importer.js'
 import Modal from './Modal.jsx'
 
 export default function SettingsModal({ data, setData, computed, today, setSnack, onClose, onResetSetup }) {
+  const [confirmClear, setConfirmClear] = useState(false)
   const cfg = data.cfg
   const [open, setOpen] = useState({ sem: true, count: true, data: false, file: false })
   const [key, setKey] = useState(getApiKey)
@@ -66,13 +67,31 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
     </button>
   )
 
+  // 펼칠 수 있다는 걸 바로 알아채도록 화살표를 제목 옆에 붙이고 배경으로 강조한다.
   const Sec = ({ id, title, children }) => (
     <div style={{ borderTop: '1px solid ' + LINE }}>
       <button
         onClick={() => toggleSec(id)}
-        style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '14px 0', border: 'none', background: 'none', cursor: 'pointer', fontSize: 14, fontWeight: 600, textAlign: 'left' }}
+        style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '14px 0', border: 'none', background: 'none', cursor: 'pointer', fontSize: 15, fontWeight: 700, textAlign: 'left' }}
       >
-        {title} <span style={{ fontSize: 13, color: FAINT, fontWeight: 400 }}>{open[id] ? '−' : '+'}</span>
+        {title}
+        <span
+          style={{
+            display: 'inline-flex', alignItems: 'center', justifyContent: 'center',
+            width: 20, height: 20, borderRadius: 5, flex: 'none',
+            background: open[id] ? GREEN : '#E8E5DE',
+            color: open[id] ? '#FFFFFF' : SUB,
+            transition: 'background 150ms, color 150ms',
+          }}
+        >
+          <svg
+            width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            strokeWidth="3.4" strokeLinecap="round" strokeLinejoin="round"
+            style={{ transform: open[id] ? 'rotate(180deg)' : 'none', transition: 'transform 180ms' }}
+          >
+            <polyline points="5 9 12 16 19 9" />
+          </svg>
+        </span>
       </button>
       {open[id] && children}
     </div>
@@ -129,6 +148,7 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
             <div style={{ fontSize: 12, color: FAINT }}>불러오면 현재 데이터를 대체합니다. API 키는 파일에 담기지 않습니다.</div>
             <button onClick={() => exportCSV(computed.sessions)} style={{ ...linkBtn, marginTop: 6 }}>진도 데이터 내보내기 (.csv)</button>
             <button onClick={() => { onClose(); onResetSetup() }} style={linkBtn}>최초 설정 다시 하기</button>
+            <button onClick={() => setConfirmClear(true)} style={{ ...linkBtn, color: RED, fontWeight: 700, marginTop: 4 }}>전체 내용 초기화</button>
             <input ref={jsonRef} type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={e => loadFile(e.target.files[0])} />
           </div>
         </Sec>
@@ -164,6 +184,34 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
         </Sec>
         <div style={{ borderTop: '1px solid ' + LINE }} />
       </div>
+
+      {confirmClear && (
+        <Modal title="전체 내용 초기화" onClose={() => setConfirmClear(false)} width={400}>
+          <div style={{ marginTop: 12, fontSize: 14, lineHeight: 1.7 }}>
+            시간표, 진도 기록, 일정, 차시별 내용이 모두 지워지고 최초 설정 화면으로 돌아갑니다.
+          </div>
+          <div style={{ marginTop: 10, fontSize: 12, color: FAINT, lineHeight: 1.7 }}>
+            되돌릴 수 없습니다. 남겨둘 내용이 있다면 먼저 <b style={{ fontWeight: 600 }}>전체 데이터 저장(.json)</b>으로 백업하세요.
+            API 키는 지워지지 않습니다.
+          </div>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 20, alignItems: 'center', marginTop: 22 }}>
+            <button onClick={() => setConfirmClear(false)} style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 14, color: SUB }}>
+              취소
+            </button>
+            <button
+              onClick={() => {
+                setConfirmClear(false)
+                setData(defaultData())
+                onClose()
+                onResetSetup()
+              }}
+              style={{ border: 'none', borderRadius: 6, padding: '8px 18px', background: RED, color: '#FFFFFF', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}
+            >
+              초기화
+            </button>
+          </div>
+        </Modal>
+      )}
     </Modal>
   )
 }

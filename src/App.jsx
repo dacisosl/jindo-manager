@@ -62,23 +62,38 @@ export default function App() {
       >
         <div
           onClick={() => data.setupDone && go('grid')}
-          style={{ fontSize: 17, fontWeight: 700, letterSpacing: '-0.01em', cursor: data.setupDone ? 'pointer' : 'default' }}
-        >
-          <span style={{ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: GREEN, marginRight: 9 }} />
-          진도매니저
-        </div>
-        <div style={{ flex: 1 }} />
-        <button
-          data-intro-hamil
-          onClick={() => setHamilOpen(true)}
-          title="해밀고 데이터 불러오기"
           style={{
-            border: 'none', borderRadius: 5, background: GREEN, color: '#FFFFFF',
-            fontSize: 12, fontWeight: 700, letterSpacing: '0.02em', padding: '5px 9px', cursor: 'pointer', lineHeight: 1,
+            display: 'flex', alignItems: 'center', gap: 10,
+            fontSize: isMobile ? 21 : 25, fontWeight: 800, letterSpacing: '-0.035em',
+            cursor: data.setupDone ? 'pointer' : 'default',
           }}
         >
-          해밀
-        </button>
+          <span style={{ display: 'inline-block', width: 7, height: isMobile ? 20 : 24, borderRadius: 2, background: GREEN, flex: 'none' }} />
+          진도계획표
+        </div>
+        <div style={{ flex: 1 }} />
+        {view === 'setup' ? (
+          <button
+            data-intro-hamil
+            onClick={() => setHamilOpen(true)}
+            title="해밀고 데이터 불러오기"
+            style={{
+              border: 'none', borderRadius: 5, background: GREEN, color: '#FFFFFF',
+              fontSize: 12, fontWeight: 700, letterSpacing: '0.02em', padding: '5px 9px', cursor: 'pointer', lineHeight: 1,
+            }}
+          >
+            해밀
+          </button>
+        ) : (
+          <button
+            onClick={() => go('setup')}
+            title="설정 화면으로 돌아가기"
+            className="hov"
+            style={{ border: 'none', background: 'none', padding: 5, borderRadius: 6, cursor: 'pointer', display: 'flex', color: SUB }}
+          >
+            <BackspaceIcon />
+          </button>
+        )}
         <button
           onClick={() => setSettingsOpen(true)}
           title="설정"
@@ -117,6 +132,16 @@ export default function App() {
 
       <Snackbar snack={snack} setSnack={setSnack} data={data} setData={setData} />
     </div>
+  )
+}
+
+function BackspaceIcon() {
+  return (
+    <svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 5H9.5L3 12l6.5 7H20a1.6 1.6 0 0 0 1.6-1.6V6.6A1.6 1.6 0 0 0 20 5z" />
+      <polyline points="15 9.5 11.5 12 15 14.5" />
+      <line x1="11.5" y1="12" x2="17.5" y2="12" />
+    </svg>
   )
 }
 

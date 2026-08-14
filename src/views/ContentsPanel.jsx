@@ -3,7 +3,7 @@ import { GREEN, INK, FAINT, LINE, LINE_SOFT, SUB, subjectOf } from '../logic.js'
 
 // 차시별 내용: 과목 탭 아래 차시 번호별 입력.
 // 여기 적은 내용이 진도표의 같은 차시 칸에 그대로 표시된다 (저장소는 contents 하나).
-export default function ContentsPanel({ data, setData, computed, today, active, setActive }) {
+export default function ContentsPanel({ data, setData, computed, today, active, setActive, height, onCollapse }) {
   const [adding, setAdding] = useState(false)
   const [newSubj, setNewSubj] = useState('')
   const [renaming, setRenaming] = useState(false)
@@ -94,8 +94,8 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
   }
 
   return (
-    <div>
-      <div style={{ display: 'flex', gap: 14, alignItems: 'baseline', flexWrap: 'wrap', borderBottom: '1px solid ' + LINE, paddingBottom: 8 }}>
+    <div style={{ height: height || undefined, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+      <div style={{ display: 'flex', gap: 14, alignItems: 'baseline', flexWrap: 'wrap', borderBottom: '1px solid ' + LINE, paddingBottom: 8, flex: 'none' }}>
         {data.subjects.map(s => (
           <button
             key={s}
@@ -140,11 +140,20 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
           <button onClick={() => { setRenaming(true); setRenameVal(subj) }} style={miniBtn}>이름 변경</button>
         )}
         {data.subjects.length > 1 && <button onClick={deleteSubject} style={miniBtn}>삭제</button>}
+        {onCollapse && (
+          <button onClick={onCollapse} title="차시별 내용 접기" className="hov" style={{ border: 'none', background: 'none', padding: '2px 4px', borderRadius: 4, cursor: 'pointer', color: FAINT, display: 'flex', alignItems: 'center', marginBottom: -2 }}>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="9 5 16 12 9 19" />
+            </svg>
+          </button>
+        )}
       </div>
       {subjClasses.length === 0 && (
-        <div style={{ marginTop: 10, fontSize: 12, color: FAINT }}>이 과목으로 지정된 반이 없습니다. 시간표 편집에서 반의 과목을 지정하세요.</div>
+        <div style={{ marginTop: 10, fontSize: 12, color: FAINT, flex: 'none' }}>이 과목으로 지정된 반이 없습니다. 시간표 편집에서 반의 과목을 지정하세요.</div>
       )}
-      <div style={{ marginTop: 4 }}>{rows}</div>
+      <div className="soft-scroll" style={{ marginTop: 4, flex: 1, minHeight: 0, overflowY: height ? 'auto' : 'visible', paddingRight: height ? 6 : 0 }}>
+        {rows}
+      </div>
     </div>
   )
 }

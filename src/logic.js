@@ -16,6 +16,7 @@ export const FAINT = '#8F8B86'
 export const LINE = '#C9C5BE'
 export const LINE_SOFT = '#E4E1DA'
 export const WARN = '#B4552D'
+export const RED = '#C2412D'
 
 export function toISO(d) {
   const p = n => String(n).padStart(2, '0')
@@ -58,8 +59,8 @@ export function pickExam(data) {
 }
 
 function eventsOn(data, iso) {
-  // '개인' 일정은 기록용 — 자동 결손을 만들지 않는다
-  return data.events.filter(e => e.start <= iso && iso <= e.end && e.type !== '개인')
+  // 개인 일정(출장 등)도 수업이 빠지는 건 같으므로 모든 유형을 결손으로 본다
+  return data.events.filter(e => e.start <= iso && iso <= e.end)
 }
 
 function cancelEventFor(data, iso, p, cls) {
@@ -91,7 +92,9 @@ export function compute(data) {
         }
         const uc = data.cancels[key]
         if (uc) {
-          sessions[key] = { cls, canceled: true, user: true, reason: uc.reason || '결손' }
+          // 수행평가도 차시를 소모하지 않는다 — 다만 결손이 아니라 수행평가로 표시된다
+          const perf = uc.kind === 'perf'
+          sessions[key] = { cls, canceled: true, user: true, perf, reason: uc.reason || (perf ? '수행평가' : '결손') }
           continue
         }
         const sec = data.cfg.examReset && exam && iso > exam.end ? 1 : 0

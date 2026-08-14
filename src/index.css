@@ -19,9 +19,21 @@ input::placeholder, textarea::placeholder { color: #B0ACA5; }
 .hov:hover { background: #EFEDE8; }
 .hov2:hover { background: #F7F5F1; }
 
-/* 표가 화면보다 넓으면 표 안에서만 가로 스크롤 */
+/* 표가 화면보다 넓으면 표 안에서만 가로 스크롤 (모바일 전용) */
 .table-scroll { overflow-x: auto; }
 .table-scroll > .table-min { min-width: 640px; }
+
+/* 패널 내부 세로 스크롤 — 얇고 조용한 스크롤바 */
+.soft-scroll { scrollbar-width: thin; scrollbar-color: #CFCAC2 transparent; }
+.soft-scroll::-webkit-scrollbar { width: 8px; height: 8px; }
+.soft-scroll::-webkit-scrollbar-track { background: transparent; }
+.soft-scroll::-webkit-scrollbar-thumb {
+  background: #D6D1C9;
+  border-radius: 99px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+.soft-scroll:hover::-webkit-scrollbar-thumb { background: #BDB7AE; background-clip: content-box; }
 
 @media print {
   body { background: #FFFFFF; }

@@ -76,7 +76,7 @@ export function exportJSON(data, today) {
   const payload = { app: 'jindo-manager', version: 1, savedAt: today, data }
   const a = document.createElement('a')
   a.href = URL.createObjectURL(new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' }))
-  a.download = '진도매니저-' + today + '.json'
+  a.download = '진도계획표-' + today + '.json'
   a.click()
   setTimeout(() => URL.revokeObjectURL(a.href), 10000) // 즉시 해제하면 다운로드가 취소될 수 있다
 }
