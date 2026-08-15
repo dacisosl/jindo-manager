@@ -126,6 +126,23 @@ export default function App() {
           <div style={{ fontSize: isMobile ? 12 : 13, fontWeight: 500, color: SUB, whiteSpace: 'nowrap', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{todayLabel}</div>
         )}
         <div style={{ flex: 1 }} />
+        {/* 미니멀 모드 스위치 — 어디서든 바로 켜고 끈다 */}
+        <button
+          onClick={() => setData(d => ({ ...d, cfg: { ...d.cfg, minimal: !d.cfg.minimal } }))}
+          title={data.cfg.minimal ? '미니멀 모드 끄기' : '미니멀 모드 켜기'}
+          style={{
+            width: 34, height: 19, border: '1px solid ' + (data.cfg.minimal ? GREEN : '#BDB9B2'), borderRadius: 999,
+            background: data.cfg.minimal ? GREEN : '#FFFFFF', position: 'relative', cursor: 'pointer', padding: 0, flex: 'none',
+          }}
+        >
+          <span
+            style={{
+              position: 'absolute', top: 2.5, left: data.cfg.minimal ? 17 : 2.5,
+              width: 12, height: 12, borderRadius: '50%',
+              background: data.cfg.minimal ? '#FFFFFF' : '#B4B0A9', transition: 'left 150ms',
+            }}
+          />
+        </button>
         {view !== 'setup' && (
           <button
             onClick={() => go('setup')}

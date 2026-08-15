@@ -103,15 +103,6 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
   return (
     <Modal title="설정" onClose={onClose}>
       <div style={{ marginTop: 16 }}>
-        <Sec id="mode" title="미니멀 모드">
-          <div style={{ padding: '0 0 20px', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14 }}>
-            <div style={row}>
-              <span style={{ flex: 1 }}>제목·설명 없이 필요한 것만</span>
-              <Toggle on={cfg.minimal} onClick={() => setCfg({ minimal: !cfg.minimal })} />
-            </div>
-          </div>
-        </Sec>
-
         <Sec id="sem" title="학기 설정">
           <div style={{ padding: '0 0 20px', display: 'flex', gap: 24, maxWidth: 380 }}>
             <label style={{ flex: 1, fontSize: 12, color: SUB }}>

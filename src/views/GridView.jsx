@@ -362,6 +362,24 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
         <button className="hov" onClick={() => { setWeekOffset(weekOffset - 1); setPop(null) }} title="이전 주" style={navBtn('arrow')}>‹</button>
         <button className="hov" onClick={() => { setWeekOffset(0); setPop(null) }} style={navBtn('text')}>오늘</button>
         <button className="hov" onClick={() => { setWeekOffset(weekOffset + 1); setPop(null) }} title="다음 주" style={navBtn('arrow')}>›</button>
+        {/* 요약(대시보드) 접기·펴기 — 화면 컨트롤을 이 줄에 모은다 */}
+        {!isMobile && (
+          <button
+            onClick={() => setUI({ dashOpen: !data.ui.dashOpen })}
+            title={data.ui.dashOpen ? '요약 접기' : '요약 펴기'}
+            className={data.ui.dashOpen ? '' : 'hov'}
+            style={{
+              display: 'flex', alignItems: 'center', gap: 5, marginLeft: 6,
+              border: 'none', borderRadius: 6,
+              background: data.ui.dashOpen ? '#EAF1EE' : '#EFEDE8',
+              color: data.ui.dashOpen ? GREEN : SUB,
+              padding: min ? 6 : '6px 10px', cursor: 'pointer', fontSize: 13, fontWeight: 600, lineHeight: 1, whiteSpace: 'nowrap',
+            }}
+          >
+            <SummaryIcon open={data.ui.dashOpen} />
+            {!min && '요약'}
+          </button>
+        )}
         {!isMobile && !showContents && (
           <button
             onClick={() => setUI({ contentsOpen: true })}
@@ -682,21 +700,7 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
 
   return (
     <div data-print="hide" style={{ marginBottom: 12, flex: 'none' }}>
-      {!alwaysOpen && (
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: open ? 7 : 0 }}>
-          {!min && <span style={SECTION_TITLE}>요약</span>}
-          <button
-            onClick={() => setUI({ dashOpen: !open })}
-            title={open ? '접기' : '펴기'}
-            style={{
-              border: 'none', background: '#EFEDE8', padding: '5px 8px', borderRadius: 6, cursor: 'pointer',
-              color: SUB, display: 'flex', alignItems: 'center', lineHeight: 1,
-            }}
-          >
-            <Chevron open={open} />
-          </button>
-        </div>
-      )}
+      {/* 접기 버튼은 아래 툴바에 있다 — 여기서 한 줄을 쓰지 않는다 */}
 
       {open && tileCount > 0 && (
         <div
@@ -831,6 +835,17 @@ function PrinterIcon() {
       <polyline points="6 9 6 3 18 3 18 9" />
       <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2" />
       <rect x="6" y="14" width="12" height="8" rx="1" />
+    </svg>
+  )
+}
+
+// 위쪽 요약 카드가 열렸는지 보이는 아이콘
+function SummaryIcon({ open }) {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="4" width="18" height="16" rx="2" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+      {open && <line x1="12" y1="4" x2="12" y2="10" />}
     </svg>
   )
 }
