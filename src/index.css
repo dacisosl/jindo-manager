@@ -42,7 +42,8 @@ input::placeholder, textarea::placeholder { color: #B0ACA5; }
   @page { margin: 10mm; }
   body { background: #FFFFFF; }
   [data-print='hide'] { display: none !important; }
-  .print-sheet { display: block !important; }
+  /* 오른쪽 끝 경계선이 인쇄 가능 영역 밖으로 밀려 잘리지 않게 살짝 안쪽으로 */
+  .print-sheet { display: block !important; padding-right: 3mm; box-sizing: border-box; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   /* A4 한 장 대비 차지하는 넓이 — 작게 1/4, 중간 1/2, 크게 1 */
   body[data-print-scale='s'] { zoom: 0.5; }
