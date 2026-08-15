@@ -133,11 +133,11 @@ export default function App() {
             style={{
               display: 'flex', alignItems: 'center', gap: 5, flex: 'none',
               border: '1px solid ' + GREEN, borderRadius: 999, background: '#FFFFFF', color: GREEN,
-              padding: '5px 13px 5px 10px', cursor: 'pointer', fontSize: 13, fontWeight: 700, lineHeight: 1,
+              padding: data.cfg.minimal ? '6px 8px' : '5px 13px 5px 10px', cursor: 'pointer', fontSize: 13, fontWeight: 700, lineHeight: 1,
             }}
           >
             <PencilIcon />
-            수정
+            {!data.cfg.minimal && '수정'}
           </button>
         )}
         {view === 'setup' && (

@@ -7,6 +7,7 @@ import useSplit from '../useSplit.js'
 export default function GridView({ data, setData, computed, today, setSnack, go, goImport, weekOffset, setWeekOffset, stagger, fit }) {
   const { sessions, perClass, exam } = computed
   const cfg = data.cfg
+  const min = !!cfg.minimal
   const { isMobile } = useWindowWidth()
   const [pop, setPop] = useState(null) // {key, mode:'menu'|'edit', draft}
   const [menuOpen, setMenuOpen] = useState(false)
@@ -258,16 +259,17 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
               <span style={{ ...ellip(isMobile ? 10 : 12, 600), color: s.canceled ? FAINT : SUB, minWidth: 0, position: 'relative' }}>{s.cls}</span>
               <div style={{ flex: 1 }} />
               {!s.canceled && mkNum(s.num)}
-              {perf && (
-                <span style={{ fontSize: isMobile ? 10 : 12, fontWeight: 700, color: RED, position: 'relative', flex: 'none' }}>{isMobile ? '수행' : '수행평가'}</span>
+              {perf && (min
+                ? <span title="수행평가" style={{ width: 8, height: 8, borderRadius: '50%', background: RED, position: 'relative', flex: 'none', alignSelf: 'center' }} />
+                : <span style={{ fontSize: isMobile ? 10 : 12, fontWeight: 700, color: RED, position: 'relative', flex: 'none' }}>{isMobile ? '수행' : '수행평가'}</span>
               )}
-              {s.canceled && !perf && (
+              {s.canceled && !perf && !min && (
                 <span style={{ fontSize: isMobile ? 9 : 12, color: SUB, position: 'relative', minWidth: 0, ...ellipBase }}>{s.reason}</span>
               )}
             </div>
           )}
-          {/* 아랫단: 내용은 옅은 흰 띠 위에 — 선을 긋지 않고 면으로 나눈다 */}
-          {s && !s.canceled && (isMobile ? !!cont : true) && (
+          {/* 아랫단: 내용은 옅은 흰 띠 위에 — 미니멀 모드에서는 띠 없이 (편집은 칸 메뉴로) */}
+          {s && !s.canceled && !min && (isMobile ? !!cont : true) && (
             <div style={{ background: 'rgba(255,255,255,0.62)', padding: isMobile ? '2px 5px 3px' : '3px 9px 4px', flex: 'none' }}>
               {isMobile ? (
                 <div style={{ fontSize: 10, color: INK, ...ellipBase }}>{cont}</div>
@@ -314,7 +316,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
         }}
       >
         <PrinterIcon />
-        인쇄
+        {!min && '인쇄'}
       </button>
       {printOpen && (
         <div
@@ -352,7 +354,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
   const toolbar = (
     <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 12, marginBottom: 8, flex: 'none', height: 32, boxSizing: 'border-box' }}>
       <div style={{ fontSize: isMobile ? 15 : 16, fontWeight: 700, letterSpacing: '-0.01em' }}>{weekLabel}</div>
-      {!isMobile && <div style={{ fontSize: 12, color: FAINT }}>{semLabel}</div>}
+      {!isMobile && !min && <div style={{ fontSize: 12, color: FAINT }}>{semLabel}</div>}
       {printButton}
       <div style={{ flex: 1 }} />
       <div data-print="hide" style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
@@ -370,7 +372,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
             }}
           >
             <PanelIcon open={false} />
-            차시별 내용
+            {!min && '차시별 내용'}
           </button>
         )}
       </div>
@@ -601,6 +603,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
 // 대시보드: 한눈에 읽히는 게 목적이라 숫자를 키우고 라벨은 눌러 위계를 만든다.
 function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile, alwaysOpen }) {
   const { sessions, perClass, exam } = computed
+  const min = !!data.cfg.minimal
   const open = alwaysOpen || data.ui.dashOpen
   const rowRef = useRef(null)
   const [dragW, setDragW] = useState(null)
@@ -680,7 +683,7 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
     <div data-print="hide" style={{ marginBottom: 12, flex: 'none' }}>
       {!alwaysOpen && (
         <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: open ? 7 : 0 }}>
-          <span style={SECTION_TITLE}>요약</span>
+          {!min && <span style={SECTION_TITLE}>요약</span>}
           <button
             onClick={() => setUI({ dashOpen: !open })}
             title={open ? '접기' : '펴기'}
@@ -701,7 +704,7 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
         >
           {/* 오늘의 수업 */}
           {show.today && (
-            <Tile label="오늘" sub={dateLabel} grow={isMobile ? undefined : growOf('today')}>
+            <Tile label="오늘" sub={dateLabel} min={min} grow={isMobile ? undefined : growOf('today')}>
               {todayRows.length === 0 ? (
                 <div style={{ fontSize: 14, fontWeight: 600, color: FAINT }}>수업 없음</div>
               ) : (
@@ -727,7 +730,7 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
 
           {/* 반별 진도 */}
           {show.progress && (
-            <Tile label="진도" sub={data.classes.length + '개 반'} grow={isMobile ? undefined : growOf('progress')}>
+            <Tile label="진도" sub={data.classes.length + '개 반'} min={min} grow={isMobile ? undefined : growOf('progress')}>
               {data.classes.length === 0 ? (
                 <div style={{ fontSize: 13, color: FAINT }}>등록된 반이 없습니다</div>
               ) : (
@@ -766,7 +769,7 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
 
           {/* 고사 — D-day와, 최대 차시보다 2차시 이상 느린 반 */}
           {show.exam && (
-            <Tile label={exam ? exam.name : '고사'} sub={exam ? exam.start.slice(5).replace('-', '.') : ''} grow={isMobile ? undefined : growOf('exam')}>
+            <Tile label={exam ? exam.name : '고사'} sub={exam ? exam.start.slice(5).replace('-', '.') : ''} min={min} grow={isMobile ? undefined : growOf('exam')}>
               {exam ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
                   <div style={{ fontSize: 26, fontWeight: 700, lineHeight: 1, letterSpacing: '-0.02em', whiteSpace: 'nowrap', flex: 'none' }}>
@@ -801,7 +804,7 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
   )
 }
 
-function Tile({ label, sub, children, grow }) {
+function Tile({ label, sub, children, grow, min }) {
   return (
     <div
       style={{
@@ -809,10 +812,13 @@ function Tile({ label, sub, children, grow }) {
         minWidth: 0, flex: grow ? grow + ' 1 0' : undefined, boxSizing: 'border-box',
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 7 }}>
-        <span style={{ fontSize: 11, fontWeight: 700, color: SUB, letterSpacing: '0.04em' }}>{label}</span>
-        {sub && <span style={{ fontSize: 11, color: FAINT }}>{sub}</span>}
-      </div>
+      {/* 미니멀: 라벨은 걷어내되 날짜·기간 같은 정보(sub)는 남긴다 */}
+      {(!min || sub) && (
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 7 }}>
+          {!min && <span style={{ fontSize: 11, fontWeight: 700, color: SUB, letterSpacing: '0.04em' }}>{label}</span>}
+          {sub && <span style={{ fontSize: 11, color: FAINT }}>{sub}</span>}
+        </div>
+      )}
       {children}
     </div>
   )

@@ -4,6 +4,7 @@ import 'intro.js/introjs.css'
 import { GREEN, INK, FAINT, LINE, SUB, SECTION_TITLE } from '../logic.js'
 import TimetableEditor from './TimetableEditor.jsx'
 import ScheduleEditor from './ScheduleEditor.jsx'
+import ScheduleCalendar from './ScheduleCalendar.jsx'
 import useWindowWidth from '../useWindowWidth.js'
 import useSplit from '../useSplit.js'
 
@@ -72,16 +73,21 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
 
   const semRow = (
     <div style={rowStyle}>
-      <div style={{ ...SECTION_TITLE, flex: 'none' }}>학기</div>
+      {!data.cfg.minimal && <div style={{ ...SECTION_TITLE, flex: 'none' }}>학기</div>}
       {semFields}
     </div>
   )
 
+  const min = !!data.cfg.minimal
   const schedule = (
     <div data-intro-sched style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
-      <div style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', padding: '0 12px 10px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-        <ScheduleEditor data={data} setData={setData} computed={computed} setSnack={setSnack} onImport={() => goImport('schedule')} fill />
-      </div>
+      {min ? (
+        <ScheduleCalendar data={data} setData={setData} setSnack={setSnack} />
+      ) : (
+        <div style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', padding: '0 12px 10px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          <ScheduleEditor data={data} setData={setData} computed={computed} setSnack={setSnack} onImport={() => goImport('schedule')} fill />
+        </div>
+      )}
     </div>
   )
 

@@ -22,6 +22,7 @@ export const defaultData = () => ({
     dash: { today: true, progress: true, exam: true }, // 대시보드에 띄울 항목
     printScale: 'l', // 인쇄 크기: s(A4의 1/4) · m(1/2) · l(1)
     fontScale: 1, // 화면 글씨 크기 배율
+    minimal: false, // 미니멀 모드: 제목·설명을 걷어내고 필요한 것만
   },
   ui: {
     dashOpen: true,

@@ -7,6 +7,7 @@ import useWindowWidth from '../useWindowWidth.js'
 // 2) 칠하기: 팔레트에서 반을 고른 뒤 드래그/탭으로 칠하기
 export default function TimetableEditor({ data, setData, cellHeight = 46, compact = false, fill = false }) {
   const { isMobile } = useWindowWidth()
+  const min = !!data.cfg.minimal
   const [selTool, setSelTool] = useState('select')
   const [selected, setSelected] = useState({}) // {'dow-p': true}
   const [regOpen, setRegOpen] = useState(false)
@@ -185,18 +186,37 @@ export default function TimetableEditor({ data, setData, cellHeight = 46, compac
         className={isMobile ? 'chip-scroll' : ''}
         style={{ display: 'flex', gap: isMobile ? 14 : 18, alignItems: 'center', paddingBottom: 10, flexWrap: isMobile ? 'nowrap' : 'wrap', flex: 'none' }}
       >
-        {toolChip(selTool === 'select', '선택', () => setSelTool('select'))}
+        {!min && toolChip(selTool === 'select', '선택', () => setSelTool('select'))}
         {data.classes.map(c => (
           <div key={c} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', flex: 'none' }}>
-            <span
-              onClick={e => { e.stopPropagation(); setChipPop(chipPop === c ? null : c) }}
-              title="색·과목 편집"
-              style={{
-                display: 'inline-block', width: 11, height: 11, borderRadius: 2, background: colorOf(data, c),
-                border: '1px solid rgba(26,26,26,0.18)', marginRight: 6, cursor: 'pointer',
-              }}
-            />
-            {toolChip(selTool === c, c, () => setSelTool(c))}
+            {min ? (
+              // 미니멀: 색 사각형만 — 누르면 칠하기 도구, 다시 누르면 선택 모드로 복귀, 길게 보지 않아도 title로 반 이름
+              <span
+                onClick={e => {
+                  e.stopPropagation()
+                  setSelTool(selTool === c ? 'select' : c)
+                }}
+                onDoubleClick={e => { e.stopPropagation(); setChipPop(chipPop === c ? null : c) }}
+                title={c}
+                style={{
+                  display: 'inline-block', width: 15, height: 15, borderRadius: 3, background: colorOf(data, c),
+                  border: selTool === c ? '2px solid ' + GREEN : '1px solid rgba(26,26,26,0.18)',
+                  boxSizing: 'border-box', cursor: 'pointer',
+                }}
+              />
+            ) : (
+              <>
+                <span
+                  onClick={e => { e.stopPropagation(); setChipPop(chipPop === c ? null : c) }}
+                  title="색·과목 편집"
+                  style={{
+                    display: 'inline-block', width: 11, height: 11, borderRadius: 2, background: colorOf(data, c),
+                    border: '1px solid rgba(26,26,26,0.18)', marginRight: 6, cursor: 'pointer',
+                  }}
+                />
+                {toolChip(selTool === c, c, () => setSelTool(c))}
+              </>
+            )}
             {chipPop === c && (
               <div
                 onClick={e => e.stopPropagation()}
@@ -232,12 +252,37 @@ export default function TimetableEditor({ data, setData, cellHeight = 46, compac
             )}
           </div>
         ))}
-        {toolChip(selTool === 'erase', '지우기', () => setSelTool('erase'))}
-        {!isMobile && (
+        {min ? (
+          <button
+            onClick={() => setSelTool(selTool === 'erase' ? 'select' : 'erase')}
+            title="지우개"
+            style={{
+              border: selTool === 'erase' ? '2px solid ' + GREEN : '1px solid ' + LINE, borderRadius: 5,
+              background: '#FFFFFF', padding: 3, cursor: 'pointer', display: 'flex', color: SUB, flex: 'none', boxSizing: 'border-box',
+            }}
+          >
+            <EraserIcon />
+          </button>
+        ) : (
+          toolChip(selTool === 'erase', '지우기', () => setSelTool('erase'))
+        )}
+        {(!isMobile || min) && (
           <>
             <div style={{ flex: 1 }} />
             <div data-intro-register style={{ display: 'inline-flex', alignItems: 'center' }}>
-              {regOpen ? registerForm : (
+              {regOpen ? registerForm : min ? (
+                <button
+                  onClick={() => { if (selCount) setRegOpen(true) }}
+                  title={'선택한 ' + selCount + '칸을 반으로 등록'}
+                  style={{
+                    width: 26, height: 26, border: 'none', borderRadius: '50%',
+                    background: selCount ? GREEN : '#E4E1DA', color: selCount ? '#FFFFFF' : FAINT,
+                    cursor: selCount ? 'pointer' : 'default', fontSize: 16, fontWeight: 700, lineHeight: 1, flex: 'none',
+                  }}
+                >
+                  +
+                </button>
+              ) : (
                 <button
                   onClick={() => { if (selCount) setRegOpen(true) }}
                   style={{
@@ -254,8 +299,8 @@ export default function TimetableEditor({ data, setData, cellHeight = 46, compac
         )}
       </div>
 
-      {/* 모바일: 선택하면 바로 아래에 큰 등록 버튼이 나타난다 */}
-      {isMobile && (
+      {/* 모바일(일반 모드): 선택하면 바로 아래에 큰 등록 버튼이 나타난다 */}
+      {isMobile && !min && (
         <div data-intro-register style={{ display: 'flex', alignItems: 'center', gap: 10, paddingBottom: 10, flex: 'none' }}>
           {regOpen ? registerForm : selCount ? (
             <button
@@ -301,7 +346,7 @@ export default function TimetableEditor({ data, setData, cellHeight = 46, compac
         </div>
       </div>
 
-      {!weekly && (
+      {!weekly && !min && (
         <div style={{ marginTop: 8, fontSize: 12, color: SUB, flex: 'none' }}>
           칸을 골라 반으로 등록하거나, 반을 고른 뒤 칠해주세요.
         </div>
@@ -313,4 +358,13 @@ export default function TimetableEditor({ data, setData, cellHeight = 46, compac
 const fieldStyle = {
   border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF',
   fontSize: 14, padding: '7px 9px', boxSizing: 'border-box',
+}
+
+function EraserIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 20H8.5L3.6 15.1a2 2 0 0 1 0-2.8L13.4 2.5a2 2 0 0 1 2.8 0l5.3 5.3a2 2 0 0 1 0 2.8L13 19.1" />
+      <line x1="9.5" y1="8.5" x2="16" y2="15" />
+    </svg>
+  )
 }

@@ -10,6 +10,7 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
   const [editMode, setEditMode] = useState(false)
   const [drafts, setDrafts] = useState({})
 
+  const min = !!data.cfg.minimal
   const subj = data.subjects.includes(active) ? active : data.subjects[0]
   const subjClasses = data.classes.filter(c => subjectOf(data, c) === subj)
 
@@ -185,7 +186,7 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
   return (
     <div style={{ height: height || undefined, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flex: 'none', height: 32, boxSizing: 'border-box' }}>
-        <span style={SECTION_TITLE}>차시별 내용</span>
+        {!min && <span style={SECTION_TITLE}>차시별 내용</span>}
         <div style={{ flex: 1 }} />
         {editMode ? (
           <button
@@ -221,7 +222,7 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
               padding: '6px 10px', cursor: 'pointer', color: SUB, fontSize: 12, fontWeight: 600, lineHeight: 1,
             }}
           >
-            접기
+            {!min && '접기'}
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
               <polyline points="9 5 16 12 9 19" />
             </svg>
