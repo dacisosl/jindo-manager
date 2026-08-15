@@ -268,11 +268,12 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
               )}
             </div>
           )}
-          {/* 아랫단: 내용은 옅은 흰 띠 위에 — 미니멀 모드에서는 띠 없이 (편집은 칸 메뉴로) */}
-          {s && !s.canceled && !min && (isMobile ? !!cont : true) && (
+          {/* 아랫단: 내용은 옅은 흰 띠 위에 */}
+          {s && !s.canceled && (isMobile || min ? !!cont : true) && (
             <div style={{ background: 'rgba(255,255,255,0.62)', padding: isMobile ? '2px 5px 3px' : '3px 9px 4px', flex: 'none' }}>
-              {isMobile ? (
-                <div style={{ fontSize: 10, color: INK, ...ellipBase }}>{cont}</div>
+              {isMobile || min ? (
+                // 미니멀은 입력칸 대신 글자만 (편집은 칸 메뉴에서)
+                <div style={{ fontSize: isMobile ? 10 : 11.5, color: INK, ...ellipBase }}>{cont}</div>
               ) : (
                 <input
                   value={cont}

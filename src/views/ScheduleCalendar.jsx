@@ -5,6 +5,8 @@ import useWindowWidth from '../useWindowWidth.js'
 // 미니멀 모드의 일정: 달력 뷰.
 // 일정이 있는 날은 유형 색 X 표시. 빈 날을 눌러 추가, 드래그(모바일은 두 번 탭)로 기간.
 const TYPE_COLOR = { 고사: '#A32D2D', 행사: '#BA7517', 휴업일: '#3F5C4C', 개인: '#185FA5' }
+// 수업이 없는 날임을 한눈에 알 수 있게 칸 전체에 옅은 배경도 함께 깐다
+const TYPE_BG = { 고사: '#F7E7E4', 행사: '#F8EEDA', 휴업일: '#E6ECE7', 개인: '#E4EBF5' }
 const TYPES = ['휴업일', '행사', '고사', '개인']
 
 // computed·subject 를 주면 날짜 밑에 그 날의 최소 차시를 동그라미로 표시한다.
@@ -143,6 +145,7 @@ export default function ScheduleCalendar({ data, setData, setSnack, computed, su
                 const selected = inRange(cell.iso, drag) || (tapStart === cell.iso) || (pick && inRange(cell.iso, pick))
                 const types = [...new Set(evs.map(e => e.type))].slice(0, 2)
                 const ses = cell.inMonth ? sessionOn(cell.iso) : null
+                const off = evs.length > 0 // 일정이 있으면 그 날은 수업이 빠진다
                 return (
                   <div
                     key={cell.iso}
@@ -152,13 +155,21 @@ export default function ScheduleCalendar({ data, setData, setSnack, computed, su
                     style={{
                       position: 'relative', minHeight: isMobile ? 44 : 0, padding: '4px 0 2px',
                       borderLeft: '1px solid ' + LINE_SOFT, cursor: 'pointer', boxSizing: 'border-box',
-                      background: selected ? 'rgba(15,92,77,0.10)' : '#FFFFFF',
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2,
-                      opacity: cell.inMonth ? 1 : 0.32,
+                      background: selected ? 'rgba(15,92,77,0.10)' : off ? (TYPE_BG[types[0]] || '#EFEDE8') : '#FFFFFF',
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
+                      opacity: cell.inMonth ? 1 : 0.32, overflow: 'hidden',
                     }}
                   >
+                    {/* 수업이 빠지는 날은 칸을 가로지르는 큰 X */}
+                    {off && (
+                      <svg viewBox="0 0 100 100" preserveAspectRatio="none" style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', pointerEvents: 'none' }}>
+                        <line x1="8" y1="8" x2="92" y2="92" stroke={TYPE_COLOR[types[0]] || SUB} strokeWidth="4" strokeLinecap="round" opacity="0.5" vectorEffect="non-scaling-stroke" />
+                        <line x1="92" y1="8" x2="8" y2="92" stroke={TYPE_COLOR[types[0]] || SUB} strokeWidth="4" strokeLinecap="round" opacity="0.5" vectorEffect="non-scaling-stroke" />
+                      </svg>
+                    )}
                     <span
                       style={{
+                        position: 'relative',
                         fontSize: 12, lineHeight: 1.4, fontWeight: isToday ? 800 : 400,
                         color: isToday ? '#FFFFFF' : INK,
                         background: isToday ? GREEN : 'transparent',
@@ -167,8 +178,8 @@ export default function ScheduleCalendar({ data, setData, setSnack, computed, su
                     >
                       {cell.day}
                     </span>
-                    {(types.length > 0 || ses) && (
-                      <span style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                    {(off || ses) && (
+                      <span style={{ position: 'relative', display: 'flex', gap: 3, alignItems: 'center', maxWidth: '100%' }}>
                         {ses && (
                           <span
                             title={ses.cls + ' ' + ses.num + '차시'}
@@ -182,8 +193,16 @@ export default function ScheduleCalendar({ data, setData, setSnack, computed, su
                             {ses.num}
                           </span>
                         )}
-                        {types.map(t => <XMark key={t} color={TYPE_COLOR[t] || SUB} />)}
-                        {evs.length > 2 && <span style={{ fontSize: 9, color: FAINT }}>+</span>}
+                        {off && (
+                          <span
+                            style={{
+                              fontSize: 9.5, fontWeight: 700, color: TYPE_COLOR[types[0]] || SUB,
+                              maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                            }}
+                          >
+                            {evs[0].name}
+                          </span>
+                        )}
                       </span>
                     )}
                   </div>
