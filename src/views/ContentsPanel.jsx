@@ -88,15 +88,31 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
     if (subj === s) setActive(data.subjects.filter(x => x !== s)[0])
   }
 
-  // 보고 있는 주의 차시를 패널 가운데로 옮긴다 — 주를 넘길 때마다 따라온다.
+  // 보고 있는 주의 음영 구간이 패널 한가운데 오도록 옮긴다 — 주를 넘길 때마다 따라온다.
+  const rMin = weekRange ? weekRange.min : focusNum
+  const rMax = weekRange ? weekRange.max : focusNum
   useEffect(() => {
     const el = scrollRef.current
-    if (!el || !focusNum || el.scrollHeight <= el.clientHeight) return
-    const row = el.querySelector('[data-row="' + focusNum + '"]')
-    if (!row) return
-    // 즉시 이동 — 부드러운 스크롤은 렌더링이 멈춘 탭에서 반영되지 않는다
-    el.scrollTop = Math.max(0, row.offsetTop - (el.clientHeight - row.offsetHeight) / 2)
-  }, [focusNum, subj, height])
+    if (!el || !rMin) return
+    const run = () => {
+      if (el.scrollHeight <= el.clientHeight) return
+      const a = el.querySelector('[data-row="' + rMin + '"]')
+      const b = el.querySelector('[data-row="' + rMax + '"]') || a
+      if (!a) return
+      // offsetTop 은 기준 요소가 달라질 수 있어 화면 좌표로 잰다
+      const base = el.getBoundingClientRect().top - el.scrollTop
+      const mid = (a.getBoundingClientRect().top + b.getBoundingClientRect().bottom) / 2 - base
+      // 즉시 이동 — 부드러운 스크롤은 렌더링이 멈춘 탭에서 반영되지 않는다
+      el.scrollTop = Math.max(0, mid - el.clientHeight / 2)
+    }
+    run()
+    // 탭 전환·높이 확정 직후에는 레이아웃이 아직이라 다음 프레임에 한 번 더 맞춘다
+    const f1 = requestAnimationFrame(() => {
+      run()
+      requestAnimationFrame(run)
+    })
+    return () => cancelAnimationFrame(f1)
+  }, [rMin, rMax, subj, height])
 
   const rows = []
   for (let n = 1; n <= rowCount; n++) {

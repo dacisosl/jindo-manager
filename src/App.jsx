@@ -25,6 +25,18 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [hamilOpen, setHamilOpen] = useState(false)
   const [tourTick, setTourTick] = useState(0) // 상단 바의 안내 버튼 → 설정 화면 투어 시작
+  const [printing, setPrinting] = useState(false)
+
+  useEffect(() => {
+    const on = () => setPrinting(true)
+    const off = () => setPrinting(false)
+    window.addEventListener('beforeprint', on)
+    window.addEventListener('afterprint', off)
+    return () => {
+      window.removeEventListener('beforeprint', on)
+      window.removeEventListener('afterprint', off)
+    }
+  }, [])
   const [snack, setSnackState] = useState(null)
   const snackT = useRef()
 
@@ -63,11 +75,13 @@ export default function App() {
   const fit = view === 'grid' || view === 'setup'
 
   // 글씨 크기는 화면 전체 배율로 조절한다. 높이는 배율로 나눠 한 화면 기준을 유지한다.
-  const fs = data.cfg.fontScale || 1
+  // 인쇄할 때는 배율을 1로 돌려 인쇄 크기 설정과 겹치지 않게 한다.
+  const fs = printing ? 1 : data.cfg.fontScale || 1
   const vh = fs === 1 ? '100vh' : 'calc(100vh / ' + fs + ')'
 
   return (
     <div
+      data-font-zoom
       style={{
         zoom: fs === 1 ? undefined : fs,
         height: fit ? vh : undefined,
