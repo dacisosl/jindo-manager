@@ -5,7 +5,7 @@ import useWindowWidth from '../useWindowWidth.js'
 // 시간표 입력 두 가지 방식:
 // 1) 블록 선택: 칸들을 눌러 고르고 [반 등록]으로 한 번에 배정 (기본, 모바일 주력)
 // 2) 칠하기: 팔레트에서 반을 고른 뒤 드래그/탭으로 칠하기
-export default function TimetableEditor({ data, setData, cellHeight = 46, compact = false, fill = false }) {
+export default function TimetableEditor({ data, setData, cellHeight = 46, compact = false, fill = false, leading = null }) {
   const { isMobile } = useWindowWidth()
   const min = !!data.cfg.minimal
   const [selTool, setSelTool] = useState('select')
@@ -186,6 +186,7 @@ export default function TimetableEditor({ data, setData, cellHeight = 46, compac
         className={isMobile ? 'chip-scroll' : ''}
         style={{ display: 'flex', gap: isMobile ? 14 : 18, alignItems: 'center', paddingBottom: 10, flexWrap: isMobile ? 'nowrap' : 'wrap', flex: 'none' }}
       >
+        {leading}
         {!min && toolChip(selTool === 'select', '선택', () => setSelTool('select'))}
         {data.classes.map(c => (
           <div key={c} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center', flex: 'none' }}>
@@ -205,17 +206,20 @@ export default function TimetableEditor({ data, setData, cellHeight = 46, compac
                 }}
               />
             ) : (
-              <>
-                <span
-                  onClick={e => { e.stopPropagation(); setChipPop(chipPop === c ? null : c) }}
-                  title="색·과목 편집"
-                  style={{
-                    display: 'inline-block', width: 11, height: 11, borderRadius: 2, background: colorOf(data, c),
-                    border: '1px solid rgba(26,26,26,0.18)', marginRight: 6, cursor: 'pointer',
-                  }}
-                />
-                {toolChip(selTool === c, c, () => setSelTool(c))}
-              </>
+              // 색 배경 안에 반 이름을 넣어 하나의 칩으로 (두 번 누르면 색·과목 편집)
+              <button
+                onClick={() => setSelTool(selTool === c ? 'select' : c)}
+                onDoubleClick={e => { e.stopPropagation(); setChipPop(chipPop === c ? null : c) }}
+                title="누르면 칠하기 · 두 번 누르면 색·과목"
+                style={{
+                  border: selTool === c ? '2px solid ' + GREEN : '1px solid rgba(26,26,26,0.18)',
+                  borderRadius: 6, background: colorOf(data, c), color: INK,
+                  padding: selTool === c ? '4px 9px' : '5px 10px', cursor: 'pointer',
+                  fontSize: 13, fontWeight: 700, lineHeight: 1, boxSizing: 'border-box', whiteSpace: 'nowrap',
+                }}
+              >
+                {c}
+              </button>
             )}
             {chipPop === c && (
               <div
@@ -252,20 +256,17 @@ export default function TimetableEditor({ data, setData, cellHeight = 46, compac
             )}
           </div>
         ))}
-        {min ? (
-          <button
-            onClick={() => setSelTool(selTool === 'erase' ? 'select' : 'erase')}
-            title="지우개"
-            style={{
-              border: selTool === 'erase' ? '2px solid ' + GREEN : '1px solid ' + LINE, borderRadius: 5,
-              background: '#FFFFFF', padding: 3, cursor: 'pointer', display: 'flex', color: SUB, flex: 'none', boxSizing: 'border-box',
-            }}
-          >
-            <EraserIcon />
-          </button>
-        ) : (
-          toolChip(selTool === 'erase', '지우기', () => setSelTool('erase'))
-        )}
+        <button
+          onClick={() => setSelTool(selTool === 'erase' ? 'select' : 'erase')}
+          title="지우개"
+          style={{
+            border: selTool === 'erase' ? '2px solid ' + GREEN : '1px solid ' + LINE, borderRadius: 6,
+            background: '#FFFFFF', padding: min ? 3 : 5, cursor: 'pointer', display: 'flex',
+            color: selTool === 'erase' ? GREEN : SUB, flex: 'none', boxSizing: 'border-box',
+          }}
+        >
+          <EraserIcon />
+        </button>
         {(!isMobile || min) && (
           <>
             <div style={{ flex: 1 }} />

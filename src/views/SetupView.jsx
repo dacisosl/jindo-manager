@@ -57,6 +57,7 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
   }, [tourTick])
 
   const ok = data.semStart && data.semEnd && data.semStart < data.semEnd && Object.keys(data.pattern).length > 0
+  const min = !!data.cfg.minimal
 
   const semFields = (
     <div data-intro-sem style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
@@ -66,7 +67,18 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
     </div>
   )
 
-  const timetable = <TimetableEditor data={data} setData={setData} cellHeight={fit ? 0 : 42} compact fill={fit} />
+  // 미니멀 데스크톱: 학기 날짜를 팔레트 줄 앞에 붙여 한 줄로 합친다
+  const mergeSem = min && !isMobile
+  const timetable = (
+    <TimetableEditor
+      data={data}
+      setData={setData}
+      cellHeight={fit ? 0 : 42}
+      compact
+      fill={fit}
+      leading={mergeSem ? <div style={{ display: 'flex', gap: 8, alignItems: 'center', flex: 'none' }}>{semFields}</div> : null}
+    />
+  )
 
   // 두 칼럼의 첫 줄(학기 / 일정)을 같은 높이로 맞춘다
   const rowStyle = { display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flex: 'none', height: 32, boxSizing: 'border-box' }
@@ -78,7 +90,6 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
     </div>
   )
 
-  const min = !!data.cfg.minimal
   // 목록/달력을 아이콘으로 전환 (미니멀은 달력이 기본)
   const calView = data.cfg.schedView == null ? min : data.cfg.schedView === 'cal'
   const toggleSched = () => setData(d => {
@@ -129,7 +140,7 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
     <div style={{ width: '100%', maxWidth: 1320, margin: '0 auto', height: fit ? '100%' : undefined, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       <div ref={wrapRef} style={{ display: 'flex', alignItems: 'stretch', flex: fit ? 1 : undefined, minHeight: fit ? 300 : 0 }}>
         <div style={{ width: splitPct + '%', minWidth: 0, flex: 'none', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-          {semRow}
+          {!mergeSem && semRow}
           {timetable}
         </div>
         <div

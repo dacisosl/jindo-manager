@@ -21,6 +21,15 @@ export const RED = '#C2412D'
 // 화면 구획 제목 (요약 · 차시별 내용 · 일정 …)
 export const SECTION_TITLE = { fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em', color: INK }
 
+// 화면 컨트롤 버튼 공통 모양 (수정 · 인쇄 · 요약 · 차시별 내용)
+export const CHIP_BTN = {
+  display: 'flex', alignItems: 'center', gap: 5, border: '1px solid #CBDED7', borderRadius: 6,
+  background: '#EAF1EE', color: GREEN, padding: '6px 12px', cursor: 'pointer',
+  fontSize: 13, fontWeight: 700, lineHeight: 1, whiteSpace: 'nowrap', flex: 'none',
+}
+// 꺼져 있을 때 (요약·차시별 내용 접힌 상태)
+export const CHIP_BTN_OFF = { ...CHIP_BTN, border: '1px solid ' + LINE, background: '#FFFFFF', color: SUB }
+
 export function toISO(d) {
   const p = n => String(n).padStart(2, '0')
   return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())

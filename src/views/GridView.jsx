@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, RED, TINTS, SECTION_TITLE, addDays, fromISO, toISO, colorOf, subjectOf, sectionTarget } from '../logic.js'
+import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, RED, TINTS, SECTION_TITLE, CHIP_BTN, CHIP_BTN_OFF, addDays, fromISO, toISO, colorOf, subjectOf, sectionTarget } from '../logic.js'
 import ContentsPanel from './ContentsPanel.jsx'
 import useWindowWidth from '../useWindowWidth.js'
 import useSplit from '../useSplit.js'
@@ -311,10 +311,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
     <div data-print="hide" style={{ position: 'relative', display: 'inline-flex' }}>
       <button
         onClick={e => { e.stopPropagation(); setPrintOpen(!printOpen); setPop(null); setMenuOpen(false) }}
-        style={{
-          display: 'flex', alignItems: 'center', gap: 5, border: '1px solid #CBDED7', borderRadius: 6,
-          background: '#EAF1EE', color: GREEN, padding: '6px 12px', cursor: 'pointer', fontSize: 13, fontWeight: 700, lineHeight: 1,
-        }}
+        style={{ ...CHIP_BTN, padding: min ? '6px 8px' : '6px 12px' }}
       >
         <PrinterIcon />
         {!min && '인쇄'}
@@ -367,13 +364,9 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
           <button
             onClick={() => setUI({ dashOpen: !data.ui.dashOpen })}
             title={data.ui.dashOpen ? '요약 접기' : '요약 펴기'}
-            className={data.ui.dashOpen ? '' : 'hov'}
             style={{
-              display: 'flex', alignItems: 'center', gap: 5, marginLeft: 6,
-              border: 'none', borderRadius: 6,
-              background: data.ui.dashOpen ? '#EAF1EE' : '#EFEDE8',
-              color: data.ui.dashOpen ? GREEN : SUB,
-              padding: min ? 6 : '6px 10px', cursor: 'pointer', fontSize: 13, fontWeight: 600, lineHeight: 1, whiteSpace: 'nowrap',
+              ...(data.ui.dashOpen ? CHIP_BTN : CHIP_BTN_OFF),
+              marginLeft: 6, padding: min ? '6px 8px' : '6px 12px',
             }}
           >
             <SummaryIcon open={data.ui.dashOpen} />
@@ -384,11 +377,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
           <button
             onClick={() => setUI({ contentsOpen: true })}
             title="차시별 내용 펴기"
-            className="hov"
-            style={{
-              display: 'flex', alignItems: 'center', gap: 5, marginLeft: 6, border: 'none', borderRadius: 6,
-              background: '#EFEDE8', color: SUB, padding: '6px 10px', cursor: 'pointer', fontSize: 13, fontWeight: 600, lineHeight: 1, whiteSpace: 'nowrap',
-            }}
+            style={{ ...CHIP_BTN_OFF, marginLeft: 6, padding: min ? '6px 8px' : '6px 12px' }}
           >
             <PanelIcon open={false} />
             {!min && '차시별 내용'}

@@ -1,5 +1,5 @@
-import React, { useRef, useState } from 'react'
-import { GREEN, FAINT, LINE, SUB, WARN, RED, exportCSV } from '../logic.js'
+﻿import React, { useRef, useState } from 'react'
+import { GREEN, FAINT, INK, LINE, SUB, WARN, RED, exportCSV } from '../logic.js'
 import { getApiKey, setApiKey, getModel, setModel, exportJSON, importJSON, defaultData } from '../storage.js'
 import { checkKey } from '../importer.js'
 import Modal from './Modal.jsx'
@@ -97,14 +97,27 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
     </div>
   )
 
-  const row = { display: 'flex', alignItems: 'center', gap: 12 }
+  // 스위치는 라벨 바로 옆에 — 시선이 멀리 건너뛰지 않게
+  const row = { display: 'flex', alignItems: 'center', gap: 10 }
+  const SwitchRow = ({ label, on, onClick }) => (
+    <button
+      onClick={onClick}
+      style={{
+        display: 'flex', alignItems: 'center', gap: 10, width: '100%', border: 'none', background: 'none',
+        padding: '5px 0', cursor: 'pointer', fontSize: 14, color: INK, textAlign: 'left',
+      }}
+    >
+      <Toggle on={on} onClick={onClick} />
+      {label}
+    </button>
+  )
   const linkBtn = { border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: GREEN, textAlign: 'left' }
 
   return (
     <Modal title="설정" onClose={onClose}>
       <div style={{ marginTop: 16 }}>
         <Sec id="sem" title="학기 설정">
-          <div style={{ padding: '0 0 20px', display: 'flex', gap: 24, maxWidth: 380 }}>
+          <div style={{ padding: '0 0 16px', display: 'flex', gap: 24, maxWidth: 380 }}>
             <label style={{ flex: 1, fontSize: 12, color: SUB }}>
               시작일
               <input type="date" value={data.semStart} onChange={e => patch({ semStart: e.target.value })} style={dateInput} />
@@ -117,11 +130,8 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
         </Sec>
 
         <Sec id="count" title="차시 카운팅">
-          <div style={{ padding: '0 0 20px', display: 'flex', flexDirection: 'column', gap: 15, fontSize: 14 }}>
-            <div style={row}>
-              <span style={{ flex: 1 }}>고사 후 1차시부터 다시</span>
-              <Toggle on={cfg.examReset} onClick={() => setCfg({ examReset: !cfg.examReset })} />
-            </div>
+          <div style={{ padding: '0 0 16px', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14 }}>
+            <SwitchRow label="고사 후 1차시부터 다시" on={cfg.examReset} onClick={() => setCfg({ examReset: !cfg.examReset })} />
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
               <span>기준 고사</span>
               {exams.length ? (
@@ -136,12 +146,11 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
                 <span style={{ fontSize: 13, color: FAINT }}>일정에 고사를 추가하면 선택할 수 있습니다.</span>
               )}
             </div>
-            <div style={{ fontSize: 12, color: FAINT }}>목표는 따로 정하지 않습니다 — 설정된 시간표의 마지막 차시가 곧 목표차시입니다.</div>
           </div>
         </Sec>
 
         <Sec id="view" title="글씨 크기">
-          <div style={{ padding: '0 0 20px', display: 'flex', gap: 8 }}>
+          <div style={{ padding: '0 0 16px', display: 'flex', gap: 8 }}>
             {[[0.9, '작게'], [1, '보통'], [1.1, '크게'], [1.25, '더 크게']].map(([v, labelText]) => {
               const on = (cfg.fontScale || 1) === v
               return (
@@ -162,19 +171,15 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
         </Sec>
 
         <Sec id="dash" title="대시보드">
-          <div style={{ padding: '0 0 20px', display: 'flex', flexDirection: 'column', gap: 15, fontSize: 14 }}>
+          <div style={{ padding: '0 0 16px', display: 'flex', flexDirection: 'column', gap: 6, fontSize: 14 }}>
             {[['today', '오늘의 수업'], ['progress', '반별 진도'], ['exam', '고사 D-day']].map(([k, labelText]) => (
-              <div key={k} style={row}>
-                <span style={{ flex: 1 }}>{labelText}</span>
-                <Toggle on={cfg.dash[k]} onClick={() => setCfg({ dash: { ...cfg.dash, [k]: !cfg.dash[k] } })} />
-              </div>
+              <SwitchRow key={k} label={labelText} on={cfg.dash[k]} onClick={() => setCfg({ dash: { ...cfg.dash, [k]: !cfg.dash[k] } })} />
             ))}
-            <div style={{ fontSize: 12, color: FAINT }}>켠 항목만 진도표 위에 표시됩니다.</div>
           </div>
         </Sec>
 
         <Sec id="print" title="인쇄">
-          <div style={{ padding: '0 0 20px', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14 }}>
+          <div style={{ padding: '0 0 16px', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14 }}>
             <div style={{ display: 'flex', gap: 8 }}>
               {[['s', '작게', '1/4'], ['m', '중간', '1/2'], ['l', '크게', '1']].map(([k, labelText, ratio]) => {
                 const on = cfg.printScale === k
@@ -194,12 +199,12 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
                 )
               })}
             </div>
-            <div style={{ fontSize: 12, color: FAINT }}>진도표의 인쇄 버튼을 누를 때 쓰는 기본 크기입니다.</div>
+            <div style={{ fontSize: 12, color: FAINT }}></div>
           </div>
         </Sec>
 
         <Sec id="data" title="데이터">
-          <div style={{ padding: '0 0 20px', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14 }}>
+          <div style={{ padding: '0 0 16px', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14 }}>
             <button onClick={() => exportJSON(data, today)} style={linkBtn}>전체 데이터 저장 (.json)</button>
             <button onClick={() => jsonRef.current.click()} style={linkBtn}>저장한 파일 불러오기 (.json)</button>
             {dataError && <div style={{ fontSize: 13, color: WARN }}>{dataError}</div>}
@@ -212,7 +217,7 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
         </Sec>
 
         <Sec id="file" title="파일 인식">
-          <div style={{ padding: '0 0 20px', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14 }}>
+          <div style={{ padding: '0 0 16px', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14 }}>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 16 }}>
               <input
                 type={keyShown ? 'text' : 'password'}

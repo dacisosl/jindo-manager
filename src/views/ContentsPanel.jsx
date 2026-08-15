@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { GREEN, INK, FAINT, LINE, LINE_SOFT, SUB, SECTION_TITLE, subjectOf } from '../logic.js'
+import { GREEN, INK, FAINT, LINE, LINE_SOFT, SUB, SECTION_TITLE, CHIP_BTN, subjectOf } from '../logic.js'
 import ScheduleCalendar, { CalendarIcon } from './ScheduleCalendar.jsx'
 
 // 차시별 내용: 과목 탭 아래 차시 번호별 입력.
@@ -229,11 +229,8 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
         {onCollapse && (
           <button
             onClick={onCollapse}
-            title="접기"
-            style={{
-              display: 'flex', alignItems: 'center', gap: 4, border: 'none', borderRadius: 6, background: '#EFEDE8',
-              padding: '6px 10px', cursor: 'pointer', color: SUB, fontSize: 12, fontWeight: 600, lineHeight: 1,
-            }}
+            title="차시별 내용 접기"
+            style={{ ...CHIP_BTN, padding: min ? '6px 8px' : '6px 12px' }}
           >
             {!min && '접기'}
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">

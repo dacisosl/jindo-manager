@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { loadData, saveData } from './storage.js'
-import { compute, toISO, fromISO, DAYS, GREEN, SUB } from './logic.js'
+import { compute, toISO, fromISO, DAYS, GREEN, SUB, CHIP_BTN } from './logic.js'
 import GridView from './views/GridView.jsx'
 import ImportView from './views/ImportView.jsx'
 import SettingsModal from './views/SettingsModal.jsx'
@@ -147,11 +147,7 @@ export default function App() {
           <button
             onClick={() => go('setup')}
             title="학기·시간표·일정 수정"
-            style={{
-              display: 'flex', alignItems: 'center', gap: 5, flex: 'none',
-              border: '1px solid ' + GREEN, borderRadius: 999, background: '#FFFFFF', color: GREEN,
-              padding: data.cfg.minimal ? '6px 8px' : '5px 13px 5px 10px', cursor: 'pointer', fontSize: 13, fontWeight: 700, lineHeight: 1,
-            }}
+            style={{ ...CHIP_BTN, padding: data.cfg.minimal ? '6px 8px' : '6px 12px' }}
           >
             <PencilIcon />
             {!data.cfg.minimal && '수정'}
