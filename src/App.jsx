@@ -111,22 +111,28 @@ export default function App() {
           <span style={{ display: 'inline-block', width: 5, height: isMobile ? 16 : 22, borderRadius: 2, background: GREEN, flex: 'none' }} />
           진도계획표
         </div>
-        {!(isMobile && view === 'setup') && (
+        {view === 'setup' ? (
+          // 설정 화면: 제목 옆 학교 로고 — 누르면 이름 검색으로 시간표를 불러온다
+          <button
+            data-intro-hamil
+            onClick={() => setHamilOpen(true)}
+            title="해밀고 시간표 불러오기"
+            className="hov"
+            style={{ border: 'none', background: 'none', borderRadius: 6, padding: 3, cursor: 'pointer', display: 'flex', alignItems: 'center', flex: 'none' }}
+          >
+            <HamilMark />
+          </button>
+        ) : (
           <div style={{ fontSize: isMobile ? 12 : 13, fontWeight: 500, color: SUB, whiteSpace: 'nowrap', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{todayLabel}</div>
         )}
         <div style={{ flex: 1 }} />
         {view === 'setup' ? (
           <>
-            <button onClick={() => goImport('timetable')} style={navLink(GREEN)}>{isMobile ? '가져오기' : '파일에서 가져오기'}</button>
-            <button onClick={() => setTourTick(t => t + 1)} style={navLink(SUB)}>안내</button>
-            <button
-              data-intro-hamil
-              onClick={() => setHamilOpen(true)}
-              title="해밀고 데이터 불러오기"
-              className="hov"
-              style={{ border: 'none', background: 'none', borderRadius: 6, padding: 3, cursor: 'pointer', display: 'flex', alignItems: 'center', flex: 'none' }}
-            >
-              <HamilMark />
+            <button onClick={() => goImport('timetable')} title="파일에서 가져오기" className="hov" style={iconBtn}>
+              <UploadIcon />
+            </button>
+            <button onClick={() => setTourTick(t => t + 1)} title="사용 안내" className="hov" style={iconBtn}>
+              <GuideIcon />
             </button>
             <button
               data-intro-start
@@ -196,7 +202,26 @@ export default function App() {
 }
 
 // 학교 로고: public/haemil.png 가 있으면 그 이미지를, 없으면 글자 배지를 쓴다.
-const navLink = color => ({ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color, whiteSpace: 'nowrap', flex: 'none' })
+const iconBtn = { border: 'none', background: 'none', padding: 5, borderRadius: 6, cursor: 'pointer', display: 'flex', color: SUB, flex: 'none' }
+
+function UploadIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+      <polyline points="7 8 12 3 17 8" />
+      <line x1="12" y1="3" x2="12" y2="15" />
+    </svg>
+  )
+}
+
+function GuideIcon() {
+  return (
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M2 4.5A2.5 2.5 0 0 1 4.5 2H12v17H4.5A2.5 2.5 0 0 0 2 21.5z" />
+      <path d="M22 4.5A2.5 2.5 0 0 0 19.5 2H12v17h7.5a2.5 2.5 0 0 1 2.5 2.5z" />
+    </svg>
+  )
+}
 
 function HamilMark() {
   const [failed, setFailed] = useState(false)

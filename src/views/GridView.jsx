@@ -422,6 +422,63 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
     </div>
   )
 
+  // 인쇄 전용 시트 — 화면 레이아웃을 그대로 찍지 않고, 종이에 맞게 정돈된 표를 내보낸다.
+  const printSheet = (
+    <div className="print-sheet">
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8 }}>
+        <span style={{ fontSize: 19, fontWeight: 800, letterSpacing: '-0.01em' }}>{weekLabel}</span>
+        <span style={{ fontSize: 12, color: '#666' }}>{semLabel} 진도계획표</span>
+        <span style={{ flex: 1 }} />
+        <span style={{ fontSize: 11, color: '#888' }}>인쇄 {today}</span>
+      </div>
+      <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
+        <colgroup>
+          <col style={{ width: 26 }} />
+          {days.map(d => <col key={d.iso} />)}
+        </colgroup>
+        <thead>
+          <tr>
+            <th style={PTH} />
+            {days.map(day => <th key={day.iso} style={PTH}>{day.label}</th>)}
+          </tr>
+        </thead>
+        <tbody>
+          {[1, 2, 3, 4, 5, 6, 7].map(p => (
+            <tr key={p}>
+              <td style={{ ...PTD, background: '#F3F1EB', textAlign: 'center', verticalAlign: 'middle', fontSize: 11, color: '#777' }}>{p}</td>
+              {days.map(day => {
+                const s = sessions[day.iso + '|' + p]
+                if (!s) return <td key={day.iso} style={PTD} />
+                if (s.canceled && !s.perf) {
+                  return (
+                    <td key={day.iso} style={{ ...PTD, background: 'repeating-linear-gradient(45deg,#FFF 0,#FFF 5px,#EFEDE8 5px,#EFEDE8 6px)' }}>
+                      <div style={{ padding: '5px 7px 0', fontSize: 11.5, fontWeight: 700, color: '#999' }}>{s.cls}</div>
+                      <div style={{ padding: '1px 7px 6px', fontSize: 10.5, color: '#777' }}>{s.reason}</div>
+                    </td>
+                  )
+                }
+                const cont = s.canceled ? '' : contentOf(s.cls, s.num)
+                return (
+                  <td key={day.iso} style={{ ...PTD, background: colorOf(data, s.cls) }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '5px 7px 0', gap: 6 }}>
+                      <span style={{ fontSize: 11.5, fontWeight: 700 }}>{s.cls}</span>
+                      {s.canceled
+                        ? <span style={{ fontSize: 11.5, fontWeight: 700, color: RED }}>수행평가</span>
+                        : <span style={{ fontSize: 15, fontWeight: 700 }}>{s.num}</span>}
+                    </div>
+                    {cont && (
+                      <div style={{ padding: '2px 7px 6px', fontSize: 10.5, lineHeight: 1.45, color: '#222', wordBreak: 'break-all' }}>{cont}</div>
+                    )}
+                  </td>
+                )
+              })}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+
   // 모바일: 좌우로 밀어 주를 넘긴다
   const swipe = {
     onTouchStart: e => {
@@ -458,8 +515,9 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
       </button>
     )
     return (
-      <div style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-        <div data-print="hide" style={{ display: 'flex', gap: 3, background: '#EFEDE8', borderRadius: 8, padding: 3, marginBottom: 10, flex: 'none' }}>
+      <>
+      <div data-print="hide" style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+        <div style={{ display: 'flex', gap: 3, background: '#EFEDE8', borderRadius: 8, padding: 3, marginBottom: 10, flex: 'none' }}>
           {tab('grid', '진도표')}
           {tab('dash', '대시보드')}
           {tab('contents', '차시별 내용')}
@@ -493,11 +551,14 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
         )}
         {popover}
       </div>
+      {printSheet}
+      </>
     )
   }
 
   return (
-    <div style={{ width: '100%', maxWidth: 1320, margin: '0 auto', height: fit ? '100%' : undefined, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+    <>
+    <div data-print="hide" style={{ width: '100%', maxWidth: 1320, margin: '0 auto', height: fit ? '100%' : undefined, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       <DashStrip data={data} computed={computed} today={today} setUI={setUI} setWeekOffset={setWeekOffset} mon0={mon0} isMobile={isMobile} />
 
       <div ref={wrapRef} style={{ display: 'flex', alignItems: fit ? 'stretch' : 'flex-start', flex: fit ? 1 : undefined, minHeight: fit ? 300 : 0 }}>
@@ -528,6 +589,8 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
       </div>
       {popover}
     </div>
+    {printSheet}
+    </>
   )
 }
 
@@ -586,6 +649,11 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
   }
 
   const dday = exam ? Math.round((fromISO(exam.start) - todayD) / 86400000) : null
+  // 최대 차시보다 2차시 이상 느린 반 — 고사 카드에서 경고로 보여준다
+  const risky = data.classes
+    .map(c => ({ c, behind: maxCur - curOf(c) }))
+    .filter(x => x.behind >= 2)
+    .sort((a, b) => b.behind - a.behind)
   const chip = c => ({ display: 'inline-block', width: 10, height: 10, borderRadius: 2, background: colorOf(data, c), border: '1px solid rgba(26,26,26,0.16)', flex: 'none' })
   const show = data.cfg.dash
   const tileCount = (show.today ? 1 : 0) + (show.progress ? 1 : 0) + (show.exam ? 1 : 0)
@@ -692,12 +760,31 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
 
           {!isMobile && show.progress && show.exam && handle('progress', 'exam')}
 
-          {/* 고사 — D-day만 크게 */}
+          {/* 고사 — D-day와, 최대 차시보다 2차시 이상 느린 반 */}
           {show.exam && (
             <Tile label={exam ? exam.name : '고사'} sub={exam ? exam.start.slice(5).replace('-', '.') : ''} grow={isMobile ? undefined : growOf('exam')}>
               {exam ? (
-                <div style={{ fontSize: 26, fontWeight: 700, lineHeight: 1, letterSpacing: '-0.02em', whiteSpace: 'nowrap' }}>
-                  D-{dday}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
+                  <div style={{ fontSize: 26, fontWeight: 700, lineHeight: 1, letterSpacing: '-0.02em', whiteSpace: 'nowrap', flex: 'none' }}>
+                    D-{dday}
+                  </div>
+                  {risky.length > 0 && (
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 10, fontWeight: 700, color: WARN, marginBottom: 2 }}>진도 주의</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 8px' }}>
+                        {risky.map(x => (
+                          <button
+                            key={x.c}
+                            onClick={() => goBehind(x.c)}
+                            title={'가장 빠른 반보다 ' + x.behind + '차시 뒤처짐'}
+                            style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 11, fontWeight: 700, color: WARN, whiteSpace: 'nowrap' }}
+                          >
+                            {x.c} −{x.behind}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div style={{ fontSize: 12, color: FAINT }}>일정에 고사 추가</div>
@@ -768,6 +855,8 @@ const ellipBase = { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'n
 const ellip = (size, weight) => ({ fontSize: size, fontWeight: weight, lineHeight: 1.3, ...ellipBase })
 const menuItem = first => ({ padding: first ? '9px 14px' : '9px 14px', fontSize: 14, cursor: 'pointer', fontWeight: first ? 600 : 400 })
 const linkBtn = { border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: GREEN }
+const PTH = { border: '1px solid #ACA8A0', background: '#EFEDE6', padding: '6px 4px', fontSize: 12, fontWeight: 700, textAlign: 'center', color: '#333' }
+const PTD = { border: '1px solid #ACA8A0', height: 90, verticalAlign: 'top', padding: 0 }
 const navBtn = kind => ({
   border: 'none', background: 'none', borderRadius: 6, cursor: 'pointer', color: SUB,
   padding: kind === 'arrow' ? '3px 9px 5px' : '6px 9px',

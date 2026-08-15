@@ -35,16 +35,27 @@ input::placeholder, textarea::placeholder { color: #B0ACA5; }
 }
 .soft-scroll:hover::-webkit-scrollbar-thumb { background: #BDB7AE; background-clip: content-box; }
 
+/* 인쇄 전용 시트 — 화면에서는 숨기고, 인쇄할 때 화면 UI 대신 이것만 내보낸다 */
+.print-sheet { display: none; }
+
 @media print {
+  @page { margin: 10mm; }
   body { background: #FFFFFF; }
   [data-print='hide'] { display: none !important; }
+  .print-sheet { display: block !important; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   /* A4 한 장 대비 차지하는 넓이 — 작게 1/4, 중간 1/2, 크게 1 */
   body[data-print-scale='s'] { zoom: 0.5; }
   body[data-print-scale='m'] { zoom: 0.707; }
   body[data-print-scale='l'] { zoom: 1; }
-  /* 화면 글씨 배율은 인쇄 배율과 겹치지 않게 되돌린다 */
-  [data-font-zoom] { zoom: 1 !important; }
+  /* 화면 글씨 배율·한 화면 고정은 인쇄에 끌고 가지 않는다 */
+  [data-font-zoom] {
+    zoom: 1 !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    padding: 0 !important;
+  }
 }
 
 /* intro.js — 앱 톤에 맞춘 덮어쓰기 (딥그린 포인트, 무채색) */
