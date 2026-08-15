@@ -79,13 +79,16 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
   )
 
   const min = !!data.cfg.minimal
+  // 미니멀은 항상 달력, 일반은 목록/달력을 아이콘으로 전환한다
+  const calView = min || data.cfg.schedView === 'cal'
+  const toggleSched = () => setData(d => ({ ...d, cfg: { ...d.cfg, schedView: d.cfg.schedView === 'cal' ? 'list' : 'cal' } }))
   const schedule = (
     <div data-intro-sched style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
-      {min ? (
-        <ScheduleCalendar data={data} setData={setData} setSnack={setSnack} />
+      {calView ? (
+        <ScheduleCalendar data={data} setData={setData} setSnack={setSnack} onToggleView={min ? undefined : toggleSched} />
       ) : (
         <div style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', padding: '0 12px 10px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          <ScheduleEditor data={data} setData={setData} computed={computed} setSnack={setSnack} onImport={() => goImport('schedule')} fill />
+          <ScheduleEditor data={data} setData={setData} computed={computed} setSnack={setSnack} onImport={() => goImport('schedule')} onToggleView={toggleSched} fill />
         </div>
       )}
     </div>

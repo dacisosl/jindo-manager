@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { GREEN, INK, FAINT, LINE, LINE_SOFT, SUB, SECTION_TITLE, subjectOf } from '../logic.js'
+import ScheduleCalendar, { CalendarIcon } from './ScheduleCalendar.jsx'
 
 // 차시별 내용: 과목 탭 아래 차시 번호별 입력.
 // 여기 적은 내용이 진도표의 같은 차시 칸에 그대로 표시된다 (저장소는 contents 하나).
-export default function ContentsPanel({ data, setData, computed, today, active, setActive, height, focusNum, weekRange, onCollapse }) {
+export default function ContentsPanel({ data, setData, computed, today, active, setActive, height, focusNum, weekRange, onCollapse, setSnack }) {
   const scrollRef = useRef(null)
   const [adding, setAdding] = useState(false)
   const [newSubj, setNewSubj] = useState('')
@@ -11,6 +12,7 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
   const [drafts, setDrafts] = useState({})
 
   const min = !!data.cfg.minimal
+  const calView = data.cfg.contentsView === 'cal'
   const subj = data.subjects.includes(active) ? active : data.subjects[0]
   const subjClasses = data.classes.filter(c => subjectOf(data, c) === subj)
 
@@ -188,6 +190,17 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8, flex: 'none', height: 32, boxSizing: 'border-box' }}>
         {!min && <span style={SECTION_TITLE}>차시별 내용</span>}
         <div style={{ flex: 1 }} />
+        <button
+          onClick={() => setData(d => ({ ...d, cfg: { ...d.cfg, contentsView: d.cfg.contentsView === 'cal' ? 'list' : 'cal' } }))}
+          title={calView ? '목록으로 보기' : '달력으로 보기'}
+          className="hov"
+          style={{
+            border: 'none', borderRadius: 6, background: calView ? '#EAF1EE' : 'none',
+            color: calView ? GREEN : SUB, padding: 5, cursor: 'pointer', display: 'flex', flex: 'none',
+          }}
+        >
+          <CalendarIcon />
+        </button>
         {editMode ? (
           <button
             onClick={applyEdit}
@@ -254,16 +267,23 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
           <button onClick={() => setAdding(true)} title="과목 추가" style={{ border: 'none', background: 'none', padding: '0 2px', cursor: 'pointer', fontSize: 16, color: FAINT, flex: 'none', lineHeight: 1 }}>+</button>
         )}
       </div>
-      <div
-        ref={scrollRef}
-        className="soft-scroll"
-        style={{
-          flex: 1, minHeight: 0, overflowY: height ? 'auto' : 'visible',
-          border: '1px solid ' + LINE, borderRadius: '0 0 6px 6px', background: '#FFFFFF', padding: '2px 8px 4px',
-        }}
-      >
-        {rows}
-      </div>
+      {calView ? (
+        // 달력뷰: 날짜 밑 동그라미가 그 날의 최소 차시
+        <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+          <ScheduleCalendar data={data} setData={setData} setSnack={setSnack} computed={computed} subject={subj} />
+        </div>
+      ) : (
+        <div
+          ref={scrollRef}
+          className="soft-scroll"
+          style={{
+            flex: 1, minHeight: 0, overflowY: height ? 'auto' : 'visible',
+            border: '1px solid ' + LINE, borderRadius: '0 0 6px 6px', background: '#FFFFFF', padding: '2px 8px 4px',
+          }}
+        >
+          {rows}
+        </div>
+      )}
     </div>
   )
 }

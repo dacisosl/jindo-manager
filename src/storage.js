@@ -29,6 +29,8 @@ export const defaultData = () => ({
     contentsOpen: true,
     splitPct: 62,
     dashW: { today: 26, progress: 60, exam: 14 }, // 대시보드 카드 너비 비율(%)
+    schedView: 'list', // 일정: list | cal
+    contentsView: 'list', // 차시별 내용: list | cal
   },
   introSeen: false,
 })

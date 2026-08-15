@@ -1,5 +1,5 @@
 import React, { useMemo, useRef, useState } from 'react'
-import { DAYS, GREEN, INK, FAINT, LINE, LINE_SOFT, SUB, fromISO, toISO } from '../logic.js'
+import { DAYS, GREEN, INK, FAINT, LINE, LINE_SOFT, SUB, colorOf, subjectOf, fromISO, toISO } from '../logic.js'
 import useWindowWidth from '../useWindowWidth.js'
 
 // 미니멀 모드의 일정: 달력 뷰.
@@ -7,7 +7,8 @@ import useWindowWidth from '../useWindowWidth.js'
 const TYPE_COLOR = { 고사: '#A32D2D', 행사: '#BA7517', 휴업일: '#3F5C4C', 개인: '#185FA5' }
 const TYPES = ['휴업일', '행사', '고사', '개인']
 
-export default function ScheduleCalendar({ data, setData, setSnack }) {
+// computed·subject 를 주면 날짜 밑에 그 날의 최소 차시를 동그라미로 표시한다.
+export default function ScheduleCalendar({ data, setData, setSnack, computed, subject, onToggleView }) {
   const { isMobile } = useWindowWidth()
   const today = toISO(new Date())
   const initMonth = () => {
@@ -39,6 +40,19 @@ export default function ScheduleCalendar({ data, setData, setSnack }) {
   }, [ym])
 
   const eventsOn = iso => data.events.filter(e => e.start <= iso && iso <= e.end)
+
+  // 그 날의 최소 차시 (과목이 주어지면 그 과목 반만) — 날짜 밑 동그라미로 보여준다
+  const sessionOn = iso => {
+    if (!computed) return null
+    let best = null
+    for (let p = 1; p <= 7; p++) {
+      const s = computed.sessions[iso + '|' + p]
+      if (!s || s.canceled || !s.num) continue
+      if (subject && subjectOf(data, s.cls) !== subject) continue
+      if (!best || s.num < best.num) best = s
+    }
+    return best
+  }
 
   const moveMonth = d => {
     setYm(({ y, m }) => {
@@ -107,6 +121,11 @@ export default function ScheduleCalendar({ data, setData, setSnack }) {
         <div style={{ flex: 1 }} />
         <button className="hov" onClick={() => moveMonth(-1)} style={calNav}>‹</button>
         <button className="hov" onClick={() => moveMonth(1)} style={calNav}>›</button>
+        {onToggleView && (
+          <button className="hov" onClick={onToggleView} title="목록으로 보기" style={{ border: 'none', background: 'none', padding: 5, borderRadius: 6, cursor: 'pointer', color: SUB, display: 'flex', flex: 'none' }}>
+            <ListIcon />
+          </button>
+        )}
       </div>
 
       <div style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', overflow: 'hidden', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', userSelect: 'none' }}>
@@ -123,6 +142,7 @@ export default function ScheduleCalendar({ data, setData, setSnack }) {
                 const isToday = cell.iso === today
                 const selected = inRange(cell.iso, drag) || (tapStart === cell.iso) || (pick && inRange(cell.iso, pick))
                 const types = [...new Set(evs.map(e => e.type))].slice(0, 2)
+                const ses = cell.inMonth ? sessionOn(cell.iso) : null
                 return (
                   <div
                     key={cell.iso}
@@ -147,8 +167,21 @@ export default function ScheduleCalendar({ data, setData, setSnack }) {
                     >
                       {cell.day}
                     </span>
-                    {types.length > 0 && (
-                      <span style={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                    {(types.length > 0 || ses) && (
+                      <span style={{ display: 'flex', gap: 3, alignItems: 'center' }}>
+                        {ses && (
+                          <span
+                            title={ses.cls + ' ' + ses.num + '차시'}
+                            style={{
+                              minWidth: 17, height: 17, padding: '0 3px', borderRadius: 999, boxSizing: 'border-box',
+                              background: colorOf(data, ses.cls), border: '1px solid rgba(26,26,26,0.16)',
+                              fontSize: 10, fontWeight: 700, color: INK,
+                              display: 'inline-flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1,
+                            }}
+                          >
+                            {ses.num}
+                          </span>
+                        )}
                         {types.map(t => <XMark key={t} color={TYPE_COLOR[t] || SUB} />)}
                         {evs.length > 2 && <span style={{ fontSize: 9, color: FAINT }}>+</span>}
                       </span>
@@ -229,6 +262,30 @@ export default function ScheduleCalendar({ data, setData, setSnack }) {
         </div>
       )}
     </div>
+  )
+}
+
+function ListIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <line x1="8" y1="6" x2="21" y2="6" />
+      <line x1="8" y1="12" x2="21" y2="12" />
+      <line x1="8" y1="18" x2="21" y2="18" />
+      <circle cx="3.5" cy="6" r="1" />
+      <circle cx="3.5" cy="12" r="1" />
+      <circle cx="3.5" cy="18" r="1" />
+    </svg>
+  )
+}
+
+export function CalendarIcon() {
+  return (
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <line x1="3" y1="10" x2="21" y2="10" />
+      <line x1="8" y1="3" x2="8" y2="7" />
+      <line x1="16" y1="3" x2="16" y2="7" />
+    </svg>
   )
 }
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
+﻿import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, RED, TINTS, SECTION_TITLE, addDays, fromISO, toISO, colorOf, subjectOf, sectionTarget } from '../logic.js'
 import ContentsPanel from './ContentsPanel.jsx'
 import useWindowWidth from '../useWindowWidth.js'
@@ -551,7 +551,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
               <button className="hov" onClick={() => setWeekOffset(weekOffset + 1)} title="다음 주" style={navBtn('arrow')}>›</button>
             </div>
             <div {...swipe} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-              <ContentsPanel data={data} setData={setData} computed={computed} today={today} active={activeSubject} setActive={setActiveSubject} height="100%" focusNum={focusNum} weekRange={weekRange} />
+              <ContentsPanel data={data} setData={setData} computed={computed} today={today} active={activeSubject} setActive={setActiveSubject} height="100%" focusNum={focusNum} weekRange={weekRange} setSnack={setSnack} />
             </div>
           </>
         )}
@@ -589,7 +589,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
         )}
         {showContents && (
           <div data-print="hide" style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
-            <ContentsPanel data={data} setData={setData} computed={computed} today={today} active={activeSubject} setActive={setActiveSubject} height={fit ? '100%' : gridH} focusNum={focusNum} weekRange={weekRange} onCollapse={() => setUI({ contentsOpen: false })} />
+            <ContentsPanel data={data} setData={setData} computed={computed} today={today} active={activeSubject} setActive={setActiveSubject} height={fit ? '100%' : gridH} focusNum={focusNum} weekRange={weekRange} setSnack={setSnack} onCollapse={() => setUI({ contentsOpen: false })} />
           </div>
         )}
       </div>
