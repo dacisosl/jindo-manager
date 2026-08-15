@@ -95,9 +95,9 @@ export default function App() {
       <div
         data-print="hide"
         style={{
-          width: '100%', maxWidth: 1320, margin: '0 auto ' + (isMobile ? 12 : fit ? 12 : 22) + 'px',
+          width: '100%', maxWidth: 1320, margin: '0 auto ' + (isMobile ? 10 : fit ? 8 : 20) + 'px',
           display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 14, borderBottom: '1px solid #C9C5BE',
-          paddingBottom: fit ? 9 : 12, flex: 'none', boxSizing: 'border-box', minWidth: 0,
+          paddingBottom: fit ? 8 : 12, flex: 'none', boxSizing: 'border-box', minWidth: 0,
         }}
       >
         <div

@@ -268,12 +268,11 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
               )}
             </div>
           )}
-          {/* 아랫단: 내용은 옅은 흰 띠 위에 */}
-          {s && !s.canceled && (isMobile || min ? !!cont : true) && (
+          {/* 아랫단: 내용은 옅은 흰 띠 위에 — 미니멀에서도 그대로 보인다 */}
+          {s && !s.canceled && (isMobile ? !!cont : true) && (
             <div style={{ background: 'rgba(255,255,255,0.62)', padding: isMobile ? '2px 5px 3px' : '3px 9px 4px', flex: 'none' }}>
-              {isMobile || min ? (
-                // 미니멀은 입력칸 대신 글자만 (편집은 칸 메뉴에서)
-                <div style={{ fontSize: isMobile ? 10 : 11.5, color: INK, ...ellipBase }}>{cont}</div>
+              {isMobile ? (
+                <div style={{ fontSize: 10, color: INK, ...ellipBase }}>{cont}</div>
               ) : (
                 <input
                   value={cont}
@@ -688,7 +687,7 @@ function DashStrip({ data, computed, today, setUI, setWeekOffset, mon0, isMobile
   )
 
   return (
-    <div data-print="hide" style={{ marginBottom: 12, flex: 'none' }}>
+    <div data-print="hide" style={{ marginBottom: open ? 12 : 0, flex: 'none' }}>
       {/* 접기 버튼은 아래 툴바에 있다 — 여기서 한 줄을 쓰지 않는다 */}
 
       {open && tileCount > 0 && (
