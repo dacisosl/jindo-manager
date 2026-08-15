@@ -5,7 +5,7 @@ const TYPES = ['휴업일', '행사', '고사', '개인']
 
 // 일정 등록 폼 + 목록. 최초 설정 화면과 일정 화면이 함께 쓴다.
 // 기간은 시작일~종료일 두 칸(같으면 하루), "+ 기간"으로 띄엄띄엄 여러 구간을 한 번에 넣는다.
-export default function ScheduleEditor({ data, setData, computed, setSnack, maxHeight, fill = false }) {
+export default function ScheduleEditor({ data, setData, computed, setSnack, maxHeight, onImport, fill = false }) {
   const todayISO = toISO(new Date())
   const initDate = data.semStart && todayISO < data.semStart ? data.semStart : todayISO
   const [ranges, setRanges] = useState([{ start: initDate, end: initDate }])
@@ -121,6 +121,18 @@ export default function ScheduleEditor({ data, setData, computed, setSnack, maxH
             )}
             {i === ranges.length - 1 && (
               <button onClick={addRange} style={{ ...linkBtn(GREEN), fontSize: 12, fontWeight: 700 }}>+ 기간</button>
+            )}
+            {i === 0 && onImport && (
+              <>
+                <div style={{ flex: 1 }} />
+                <button onClick={onImport} title="학사일정 파일에서 가져오기" className="hov" style={{ border: 'none', background: 'none', padding: 4, borderRadius: 6, cursor: 'pointer', color: SUB, display: 'flex', flex: 'none' }}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                    <polyline points="7 8 12 3 17 8" />
+                    <line x1="12" y1="3" x2="12" y2="15" />
+                  </svg>
+                </button>
+              </>
             )}
           </div>
         ))}

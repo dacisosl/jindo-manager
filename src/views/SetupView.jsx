@@ -79,15 +79,8 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
 
   const schedule = (
     <div data-intro-sched style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
-      <div style={rowStyle}>
-        <span style={SECTION_TITLE}>일정</span>
-        <div style={{ flex: 1 }} />
-        <button onClick={() => goImport('schedule')} style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 12, color: GREEN }}>
-          파일에서
-        </button>
-      </div>
       <div style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', padding: '0 12px 10px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-        <ScheduleEditor data={data} setData={setData} computed={computed} setSnack={setSnack} fill />
+        <ScheduleEditor data={data} setData={setData} computed={computed} setSnack={setSnack} onImport={() => goImport('schedule')} fill />
       </div>
     </div>
   )
