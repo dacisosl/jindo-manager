@@ -21,6 +21,7 @@ export const defaultData = () => ({
     anim: true,
     dash: { today: true, progress: true, exam: true }, // 대시보드에 띄울 항목
     printScale: 'l', // 인쇄 크기: s(A4의 1/4) · m(1/2) · l(1)
+    fontScale: 1, // 화면 글씨 크기 배율
   },
   ui: {
     dashOpen: true,

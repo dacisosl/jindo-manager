@@ -62,11 +62,16 @@ export default function App() {
   // 나머지 화면은 자연스럽게 스크롤한다.
   const fit = view === 'grid' || view === 'setup'
 
+  // 글씨 크기는 화면 전체 배율로 조절한다. 높이는 배율로 나눠 한 화면 기준을 유지한다.
+  const fs = data.cfg.fontScale || 1
+  const vh = fs === 1 ? '100vh' : 'calc(100vh / ' + fs + ')'
+
   return (
     <div
       style={{
-        height: fit ? '100vh' : undefined,
-        minHeight: fit ? undefined : '100vh',
+        zoom: fs === 1 ? undefined : fs,
+        height: fit ? vh : undefined,
+        minHeight: fit ? undefined : vh,
         overflow: fit ? 'hidden' : undefined,
         display: 'flex', flexDirection: 'column',
         padding: isMobile ? '14px 14px 80px' : fit ? '16px 32px 18px' : '22px 40px 90px',
@@ -76,34 +81,36 @@ export default function App() {
       <div
         data-print="hide"
         style={{
-          width: '100%', maxWidth: 1320, margin: '0 auto ' + (isMobile ? 14 : fit ? 12 : 22) + 'px',
-          display: 'flex', alignItems: 'center', gap: 14, borderBottom: '1px solid #C9C5BE',
-          paddingBottom: fit ? 9 : 12, flex: 'none', boxSizing: 'border-box',
+          width: '100%', maxWidth: 1320, margin: '0 auto ' + (isMobile ? 12 : fit ? 12 : 22) + 'px',
+          display: 'flex', alignItems: 'center', gap: isMobile ? 8 : 14, borderBottom: '1px solid #C9C5BE',
+          paddingBottom: fit ? 9 : 12, flex: 'none', boxSizing: 'border-box', minWidth: 0,
         }}
       >
         <div
           onClick={() => data.setupDone && go('grid')}
           style={{
-            display: 'flex', alignItems: 'center', gap: 10,
-            fontSize: isMobile ? 20 : 23, fontWeight: 800, letterSpacing: '-0.035em',
+            display: 'flex', alignItems: 'center', gap: isMobile ? 7 : 10, flex: 'none',
+            fontSize: isMobile ? 17 : 23, fontWeight: 800, letterSpacing: '-0.035em',
             cursor: data.setupDone ? 'pointer' : 'default',
           }}
         >
-          <span style={{ display: 'inline-block', width: 6, height: isMobile ? 19 : 22, borderRadius: 2, background: GREEN, flex: 'none' }} />
+          <span style={{ display: 'inline-block', width: 5, height: isMobile ? 16 : 22, borderRadius: 2, background: GREEN, flex: 'none' }} />
           진도계획표
         </div>
-        <div style={{ fontSize: 13, fontWeight: 500, color: SUB, whiteSpace: 'nowrap' }}>{todayLabel}</div>
+        {!(isMobile && view === 'setup') && (
+          <div style={{ fontSize: isMobile ? 12 : 13, fontWeight: 500, color: SUB, whiteSpace: 'nowrap', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{todayLabel}</div>
+        )}
         <div style={{ flex: 1 }} />
         {view === 'setup' ? (
           <>
-            <button onClick={() => goImport('timetable')} style={navLink(GREEN)}>파일에서 가져오기</button>
+            <button onClick={() => goImport('timetable')} style={navLink(GREEN)}>{isMobile ? '가져오기' : '파일에서 가져오기'}</button>
             <button onClick={() => setTourTick(t => t + 1)} style={navLink(SUB)}>안내</button>
             <button
               data-intro-hamil
               onClick={() => setHamilOpen(true)}
               title="해밀고 데이터 불러오기"
               className="hov"
-              style={{ border: 'none', background: 'none', borderRadius: 6, padding: 3, cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+              style={{ border: 'none', background: 'none', borderRadius: 6, padding: 3, cursor: 'pointer', display: 'flex', alignItems: 'center', flex: 'none' }}
             >
               <HamilMark />
             </button>
@@ -111,7 +118,7 @@ export default function App() {
               data-intro-start
               onClick={() => setupReady(data) && finishSetup()}
               style={{
-                border: 'none', borderRadius: 6, padding: '7px 18px', fontSize: 14, fontWeight: 700,
+                border: 'none', borderRadius: 6, padding: isMobile ? '6px 12px' : '7px 18px', fontSize: 14, fontWeight: 700, flex: 'none',
                 background: setupReady(data) ? GREEN : '#D9D5CE', color: '#FFFFFF',
                 cursor: setupReady(data) ? 'pointer' : 'default',
               }}
@@ -175,7 +182,7 @@ export default function App() {
 }
 
 // 학교 로고: public/haemil.png 가 있으면 그 이미지를, 없으면 글자 배지를 쓴다.
-const navLink = color => ({ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color, whiteSpace: 'nowrap' })
+const navLink = color => ({ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color, whiteSpace: 'nowrap', flex: 'none' })
 
 function HamilMark() {
   const [failed, setFailed] = useState(false)

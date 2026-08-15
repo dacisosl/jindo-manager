@@ -7,7 +7,7 @@ import Modal from './Modal.jsx'
 export default function SettingsModal({ data, setData, computed, today, setSnack, onClose, onResetSetup }) {
   const [confirmClear, setConfirmClear] = useState(false)
   const cfg = data.cfg
-  const [open, setOpen] = useState({ sem: true, count: true, dash: false, print: false, data: false, file: false })
+  const [open, setOpen] = useState({ sem: true, count: true, view: false, dash: false, print: false, data: false, file: false })
   const [key, setKey] = useState(getApiKey)
   const [keyShown, setKeyShown] = useState(false)
   const [model, setModelState] = useState(getModel)
@@ -119,7 +119,7 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
         <Sec id="count" title="차시 카운팅">
           <div style={{ padding: '0 0 20px', display: 'flex', flexDirection: 'column', gap: 15, fontSize: 14 }}>
             <div style={row}>
-              <span style={{ flex: 1 }}>고사 후 차시 리셋</span>
+              <span style={{ flex: 1 }}>고사 후 1차시부터 다시</span>
               <Toggle on={cfg.examReset} onClick={() => setCfg({ examReset: !cfg.examReset })} />
             </div>
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 10 }}>
@@ -137,6 +137,27 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
               )}
             </div>
             <div style={{ fontSize: 12, color: FAINT }}>목표는 따로 정하지 않습니다 — 설정된 시간표의 마지막 차시가 곧 목표차시입니다.</div>
+          </div>
+        </Sec>
+
+        <Sec id="view" title="글씨 크기">
+          <div style={{ padding: '0 0 20px', display: 'flex', gap: 8 }}>
+            {[[0.9, '작게'], [1, '보통'], [1.1, '크게'], [1.25, '더 크게']].map(([v, labelText]) => {
+              const on = (cfg.fontScale || 1) === v
+              return (
+                <button
+                  key={v}
+                  onClick={() => setCfg({ fontScale: v })}
+                  style={{
+                    flex: 1, border: '1px solid ' + (on ? GREEN : LINE), borderRadius: 6, cursor: 'pointer',
+                    background: on ? GREEN : '#FFFFFF', color: on ? '#FFFFFF' : SUB,
+                    padding: '9px 0', fontSize: 12 + (v - 1) * 10, fontWeight: on ? 700 : 500,
+                  }}
+                >
+                  {labelText}
+                </button>
+              )
+            })}
           </div>
         </Sec>
 

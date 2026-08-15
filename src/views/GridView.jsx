@@ -16,6 +16,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
   const [printRemember, setPrintRemember] = useState(true)
   const [gridH, setGridH] = useState(null)
   const gridRef = useRef(null)
+  const touchRef = useRef(null)
   const { wrapRef, splitPct, dragging, startDrag } = useSplit(data, setData)
 
   useEffect(() => {
@@ -46,7 +47,9 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
   const showContents = data.ui.contentsOpen
 
   const t = fromISO(today)
-  const mon0 = addDays(t, 1 - (t.getDay() || 7))
+  // 주말에는 이미 지난 주가 아니라 다음 주 월요일부터 보여준다
+  const dow0 = t.getDay()
+  const mon0 = addDays(t, 1 - (dow0 || 7) + (dow0 === 0 || dow0 === 6 ? 7 : 0))
   const mon = addDays(mon0, weekOffset * 7)
   const days = []
   for (let i = 0; i < 5; i++) {
@@ -419,6 +422,25 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
     </div>
   )
 
+  // 모바일: 좌우로 밀어 주를 넘긴다
+  const swipe = {
+    onTouchStart: e => {
+      const t0 = e.touches[0]
+      touchRef.current = { x: t0.clientX, y: t0.clientY }
+    },
+    onTouchEnd: e => {
+      const s0 = touchRef.current
+      if (!s0) return
+      touchRef.current = null
+      const t1 = e.changedTouches[0]
+      const dx = t1.clientX - s0.x
+      const dy = t1.clientY - s0.y
+      if (Math.abs(dx) < 55 || Math.abs(dx) < Math.abs(dy) * 1.5) return
+      setPop(null)
+      setWeekOffset(weekOffset + (dx < 0 ? 1 : -1))
+    },
+  }
+
   // 모바일: 진도표 · 대시보드 · 차시별 내용을 탭으로 나눠 각각 한 화면에 담는다.
   if (isMobile) {
     const tab = (id, label) => (
@@ -446,7 +468,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
         {mtab === 'grid' && (
           <>
             {toolbar}
-            <div style={{ flex: 1, minHeight: 0 }}>{table}</div>
+            <div {...swipe} style={{ flex: 1, minHeight: 0 }}>{table}</div>
           </>
         )}
         {mtab === 'dash' && (
@@ -464,7 +486,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
               <button className="hov" onClick={() => setWeekOffset(0)} style={navBtn('text')}>오늘</button>
               <button className="hov" onClick={() => setWeekOffset(weekOffset + 1)} title="다음 주" style={navBtn('arrow')}>›</button>
             </div>
-            <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
+            <div {...swipe} style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
               <ContentsPanel data={data} setData={setData} computed={computed} today={today} active={activeSubject} setActive={setActiveSubject} height="100%" focusNum={focusNum} weekRange={weekRange} />
             </div>
           </>
