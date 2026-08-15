@@ -301,9 +301,11 @@ export default function TimetableEditor({ data, setData, cellHeight = 46, compac
         </div>
       </div>
 
-      <div style={{ marginTop: 8, fontSize: 12, color: SUB, flex: 'none', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-        {weekly ? '주당  ' + weekly : '칸을 골라 반으로 등록하거나, 반을 고른 뒤 칠해주세요.'}
-      </div>
+      {!weekly && (
+        <div style={{ marginTop: 8, fontSize: 12, color: SUB, flex: 'none' }}>
+          칸을 골라 반으로 등록하거나, 반을 고른 뒤 칠해주세요.
+        </div>
+      )}
     </>
   )
 }

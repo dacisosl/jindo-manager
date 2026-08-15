@@ -45,10 +45,8 @@ input::placeholder, textarea::placeholder { color: #B0ACA5; }
   /* 오른쪽 끝 경계선이 인쇄 가능 영역 밖으로 밀려 잘리지 않게 살짝 안쪽으로 */
   .print-sheet { display: block !important; padding-right: 3mm; box-sizing: border-box; }
   * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  /* A4 한 장 대비 차지하는 넓이 — 작게 1/4, 중간 1/2, 크게 1 */
-  body[data-print-scale='s'] { zoom: 0.5; }
-  body[data-print-scale='m'] { zoom: 0.707; }
-  body[data-print-scale='l'] { zoom: 1; }
+  /* 크기별 지면: 작게는 좌상단 1/4(폭 절반), 중간은 상단 1/2(폭 전체·행 압축), 크게는 한 장.
+     배율 축소가 아니라 print-sheet 가 크기별로 따로 조판한다. */
   /* 화면 글씨 배율·한 화면 고정은 인쇄에 끌고 가지 않는다 */
   [data-font-zoom] {
     zoom: 1 !important;

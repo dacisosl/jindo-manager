@@ -14,6 +14,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
   const [mtab, setMtab] = useState('grid') // 모바일 탭: grid | dash | contents
   const [printOpen, setPrintOpen] = useState(false)
   const [printRemember, setPrintRemember] = useState(true)
+  const [printAs, setPrintAs] = useState(null) // 이번 인쇄에 쓸 크기 (기억 안 함 선택 대비)
   const [gridH, setGridH] = useState(null)
   const gridRef = useRef(null)
   const touchRef = useRef(null)
@@ -295,9 +296,12 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
 
   const doPrint = scale => {
     if (printRemember) setData(d => ({ ...d, cfg: { ...d.cfg, printScale: scale } }))
-    document.body.dataset.printScale = scale
+    setPrintAs(scale)
     setPrintOpen(false)
-    setTimeout(() => window.print(), 120)
+    setTimeout(() => {
+      window.print()
+      setPrintAs(null)
+    }, 150)
   }
 
   const printButton = (
@@ -355,25 +359,6 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
         <button className="hov" onClick={() => { setWeekOffset(weekOffset - 1); setPop(null) }} title="이전 주" style={navBtn('arrow')}>‹</button>
         <button className="hov" onClick={() => { setWeekOffset(0); setPop(null) }} style={navBtn('text')}>오늘</button>
         <button className="hov" onClick={() => { setWeekOffset(weekOffset + 1); setPop(null) }} title="다음 주" style={navBtn('arrow')}>›</button>
-        <div style={{ position: 'relative' }}>
-          <button
-            className="hov"
-            onClick={e => { e.stopPropagation(); setMenuOpen(!menuOpen); setPop(null) }}
-            title="메뉴"
-            style={{ ...navBtn('text'), letterSpacing: '0.05em' }}
-          >
-            ⋯
-          </button>
-          {menuOpen && (
-            <div
-              onClick={e => e.stopPropagation()}
-              style={{ position: 'absolute', right: 0, top: 32, width: 172, background: '#FFFFFF', border: '1px solid ' + LINE, borderRadius: 6, boxShadow: '0 8px 24px rgba(26,26,26,0.12)', padding: '6px 0', zIndex: 50 }}
-            >
-              <div className="hov2" onClick={() => { setMenuOpen(false); goImport('timetable') }} style={{ padding: '8px 14px', fontSize: 13, cursor: 'pointer' }}>파일에서 가져오기</div>
-              <div className="hov2" onClick={() => { setMenuOpen(false); go('setup') }} style={{ padding: '8px 14px', fontSize: 13, cursor: 'pointer' }}>학기·시간표·일정 수정</div>
-            </div>
-          )}
-        </div>
         {!isMobile && !showContents && (
           <button
             onClick={() => setUI({ contentsOpen: true })}
@@ -423,51 +408,70 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
   )
 
   // 인쇄 전용 시트 — 화면 레이아웃을 그대로 찍지 않고, 종이에 맞게 정돈된 표를 내보낸다.
+  // 크기는 배율 축소가 아니라 지면별로 따로 조판한다:
+  //   크게 = A4 한 장 · 중간 = 상단 절반(행 압축) · 작게 = 좌상단 1/4(폭 절반, 반+차시만)
+  const pscale = printAs || cfg.printScale || 'l'
+  const P = {
+    l: { width: '100%', rowH: 90, cls: 11.5, num: 15, cont: 10.5, title: 19, sub: 12, day: 12, dayPad: '6px 4px', pcol: 26, showCont: true },
+    m: { width: '100%', rowH: 52, cls: 10, num: 13, cont: 9.5, title: 15, sub: 10.5, day: 10.5, dayPad: '4px 3px', pcol: 20, showCont: true },
+    s: { width: '50%', rowH: 34, cls: 9, num: 11.5, cont: 0, title: 12.5, sub: 9.5, day: 9.5, dayPad: '3px 2px', pcol: 15, showCont: false },
+  }[pscale]
+  const pth = { border: '1px solid #ACA8A0', background: '#EFEDE6', padding: P.dayPad, fontSize: P.day, fontWeight: 700, textAlign: 'center', color: '#333' }
+  const ptd = { border: '1px solid #ACA8A0', height: P.rowH, verticalAlign: 'top', padding: 0, overflow: 'hidden' }
   const printSheet = (
-    <div className="print-sheet">
-      <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 8 }}>
-        <span style={{ fontSize: 19, fontWeight: 800, letterSpacing: '-0.01em' }}>{weekLabel}</span>
-        <span style={{ fontSize: 12, color: '#666' }}>{semLabel} 진도계획표</span>
+    <div className="print-sheet" style={{ width: P.width }}>
+      <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: P.rowH > 40 ? 8 : 5 }}>
+        <span style={{ fontSize: P.title, fontWeight: 800, letterSpacing: '-0.01em' }}>{weekLabel}</span>
+        <span style={{ fontSize: P.sub, color: '#666' }}>{semLabel} 진도계획표</span>
         <span style={{ flex: 1 }} />
-        <span style={{ fontSize: 11, color: '#888' }}>인쇄 {today}</span>
+        {P.showCont && <span style={{ fontSize: 11, color: '#888' }}>인쇄 {today}</span>}
       </div>
       <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
         <colgroup>
-          <col style={{ width: 26 }} />
+          <col style={{ width: P.pcol }} />
           {days.map(d => <col key={d.iso} />)}
         </colgroup>
         <thead>
           <tr>
-            <th style={PTH} />
-            {days.map(day => <th key={day.iso} style={PTH}>{day.label}</th>)}
+            <th style={pth} />
+            {days.map(day => <th key={day.iso} style={pth}>{day.label}</th>)}
           </tr>
         </thead>
         <tbody>
           {[1, 2, 3, 4, 5, 6, 7].map(p => (
             <tr key={p}>
-              <td style={{ ...PTD, background: '#F3F1EB', textAlign: 'center', verticalAlign: 'middle', fontSize: 11, color: '#777' }}>{p}</td>
+              <td style={{ ...ptd, background: '#F3F1EB', textAlign: 'center', verticalAlign: 'middle', fontSize: Math.max(9, P.day - 1.5), color: '#777' }}>{p}</td>
               {days.map(day => {
                 const s = sessions[day.iso + '|' + p]
-                if (!s) return <td key={day.iso} style={PTD} />
+                if (!s) return <td key={day.iso} style={ptd} />
                 if (s.canceled && !s.perf) {
                   return (
-                    <td key={day.iso} style={{ ...PTD, background: 'repeating-linear-gradient(45deg,#FFF 0,#FFF 5px,#EFEDE8 5px,#EFEDE8 6px)' }}>
-                      <div style={{ padding: '5px 7px 0', fontSize: 11.5, fontWeight: 700, color: '#999' }}>{s.cls}</div>
-                      <div style={{ padding: '1px 7px 6px', fontSize: 10.5, color: '#777' }}>{s.reason}</div>
+                    <td key={day.iso} style={{ ...ptd, background: 'repeating-linear-gradient(45deg,#FFF 0,#FFF 5px,#EFEDE8 5px,#EFEDE8 6px)' }}>
+                      <div style={{ display: 'flex', flexDirection: P.showCont ? 'column' : 'row', gap: P.showCont ? 0 : 4, alignItems: P.showCont ? 'stretch' : 'center', height: P.showCont ? undefined : '100%', padding: P.showCont ? '4px 6px' : '0 5px' }}>
+                        <span style={{ fontSize: P.cls, fontWeight: 700, color: '#999' }}>{s.cls}</span>
+                        {P.showCont && <span style={{ fontSize: Math.max(8.5, P.cls - 1), color: '#777' }}>{s.reason}</span>}
+                      </div>
                     </td>
                   )
                 }
-                const cont = s.canceled ? '' : contentOf(s.cls, s.num)
+                const cont = s.canceled || !P.showCont ? '' : contentOf(s.cls, s.num)
                 return (
-                  <td key={day.iso} style={{ ...PTD, background: colorOf(data, s.cls) }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', padding: '5px 7px 0', gap: 6 }}>
-                      <span style={{ fontSize: 11.5, fontWeight: 700 }}>{s.cls}</span>
+                  <td key={day.iso} style={{ ...ptd, background: colorOf(data, s.cls) }}>
+                    <div
+                      style={{
+                        display: 'flex', justifyContent: 'space-between', gap: 5,
+                        alignItems: P.showCont ? 'baseline' : 'center',
+                        height: P.showCont ? undefined : '100%',
+                        padding: P.showCont ? '4px 6px 0' : '0 5px',
+                      }}
+                    >
+                      <span style={{ fontSize: P.cls, fontWeight: 700, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{s.cls}</span>
                       {s.canceled
-                        ? <span style={{ fontSize: 11.5, fontWeight: 700, color: RED }}>수행평가</span>
-                        : <span style={{ fontSize: 15, fontWeight: 700 }}>{s.num}</span>}
+                        ? <span style={{ fontSize: P.cls, fontWeight: 700, color: RED, flex: 'none' }}>{P.showCont ? '수행평가' : '수행'}</span>
+                        : <span style={{ fontSize: P.num, fontWeight: 700, flex: 'none' }}>{s.num}</span>}
                     </div>
                     {cont && (
-                      <div style={{ padding: '2px 7px 6px', fontSize: 10.5, lineHeight: 1.45, color: '#222', wordBreak: 'break-all' }}>{cont}</div>
+                      <div style={{ padding: '2px 6px 5px', fontSize: P.cont, lineHeight: 1.4, color: '#222', wordBreak: 'break-all' }}>{cont}</div>
                     )}
                   </td>
                 )
@@ -855,8 +859,6 @@ const ellipBase = { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'n
 const ellip = (size, weight) => ({ fontSize: size, fontWeight: weight, lineHeight: 1.3, ...ellipBase })
 const menuItem = first => ({ padding: first ? '9px 14px' : '9px 14px', fontSize: 14, cursor: 'pointer', fontWeight: first ? 600 : 400 })
 const linkBtn = { border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: GREEN }
-const PTH = { border: '1px solid #ACA8A0', background: '#EFEDE6', padding: '6px 4px', fontSize: 12, fontWeight: 700, textAlign: 'center', color: '#333' }
-const PTD = { border: '1px solid #ACA8A0', height: 90, verticalAlign: 'top', padding: 0 }
 const navBtn = kind => ({
   border: 'none', background: 'none', borderRadius: 6, cursor: 'pointer', color: SUB,
   padding: kind === 'arrow' ? '3px 9px 5px' : '6px 9px',

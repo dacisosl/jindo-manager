@@ -126,32 +126,12 @@ export default function App() {
           <div style={{ fontSize: isMobile ? 12 : 13, fontWeight: 500, color: SUB, whiteSpace: 'nowrap', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis' }}>{todayLabel}</div>
         )}
         <div style={{ flex: 1 }} />
-        {view === 'setup' ? (
-          <>
-            <button onClick={() => goImport('timetable')} title="파일에서 가져오기" className="hov" style={iconBtn}>
-              <UploadIcon />
-            </button>
-            <button onClick={() => setTourTick(t => t + 1)} title="사용 안내" className="hov" style={iconBtn}>
-              <GuideIcon />
-            </button>
-            <button
-              data-intro-start
-              onClick={() => setupReady(data) && finishSetup()}
-              style={{
-                border: 'none', borderRadius: 6, padding: isMobile ? '6px 12px' : '7px 18px', fontSize: 14, fontWeight: 700, flex: 'none',
-                background: setupReady(data) ? GREEN : '#D9D5CE', color: '#FFFFFF',
-                cursor: setupReady(data) ? 'pointer' : 'default',
-              }}
-            >
-              {data.setupDone ? '완료' : '시작'}
-            </button>
-          </>
-        ) : (
+        {view !== 'setup' && (
           <button
             onClick={() => go('setup')}
             title="학기·시간표·일정 수정"
             style={{
-              display: 'flex', alignItems: 'center', gap: 5,
+              display: 'flex', alignItems: 'center', gap: 5, flex: 'none',
               border: '1px solid ' + GREEN, borderRadius: 999, background: '#FFFFFF', color: GREEN,
               padding: '5px 13px 5px 10px', cursor: 'pointer', fontSize: 13, fontWeight: 700, lineHeight: 1,
             }}
@@ -160,14 +140,32 @@ export default function App() {
             수정
           </button>
         )}
+        {view === 'setup' && (
+          <button onClick={() => setTourTick(t => t + 1)} title="사용 안내" className="hov" style={iconBtn}>
+            <GuideIcon />
+          </button>
+        )}
         <button
           onClick={() => setSettingsOpen(true)}
           title="설정"
           className="hov"
-          style={{ border: 'none', background: 'none', padding: 5, borderRadius: 6, cursor: 'pointer', display: 'flex', color: SUB }}
+          style={iconBtn}
         >
           <GearIcon />
         </button>
+        {view === 'setup' && (
+          <button
+            data-intro-start
+            onClick={() => setupReady(data) && finishSetup()}
+            style={{
+              border: 'none', borderRadius: 6, padding: isMobile ? '6px 12px' : '7px 18px', fontSize: 14, fontWeight: 700, flex: 'none',
+              background: setupReady(data) ? GREEN : '#D9D5CE', color: '#FFFFFF',
+              cursor: setupReady(data) ? 'pointer' : 'default',
+            }}
+          >
+            {data.setupDone ? '완료' : '시작'}
+          </button>
+        )}
       </div>
 
       <div style={{ flex: fit ? 1 : undefined, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: fit ? 'auto' : undefined }}>
@@ -185,6 +183,7 @@ export default function App() {
           setSnack={setSnack}
           onClose={() => setSettingsOpen(false)}
           onResetSetup={() => go('setup')}
+          onImport={goImport}
         />
       )}
       {hamilOpen && (
@@ -203,16 +202,6 @@ export default function App() {
 
 // 학교 로고: public/haemil.png 가 있으면 그 이미지를, 없으면 글자 배지를 쓴다.
 const iconBtn = { border: 'none', background: 'none', padding: 5, borderRadius: 6, cursor: 'pointer', display: 'flex', color: SUB, flex: 'none' }
-
-function UploadIcon() {
-  return (
-    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-      <polyline points="7 8 12 3 17 8" />
-      <line x1="12" y1="3" x2="12" y2="15" />
-    </svg>
-  )
-}
 
 function GuideIcon() {
   return (

@@ -4,7 +4,7 @@ import { getApiKey, setApiKey, getModel, setModel, exportJSON, importJSON, defau
 import { checkKey } from '../importer.js'
 import Modal from './Modal.jsx'
 
-export default function SettingsModal({ data, setData, computed, today, setSnack, onClose, onResetSetup }) {
+export default function SettingsModal({ data, setData, computed, today, setSnack, onClose, onResetSetup, onImport }) {
   const [confirmClear, setConfirmClear] = useState(false)
   const cfg = data.cfg
   const [open, setOpen] = useState({ sem: true, count: true, view: false, dash: false, print: false, data: false, file: false })
@@ -237,6 +237,10 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
             <div style={{ fontSize: 12, color: FAINT }}>
               키는 이 브라우저에만 저장되며 파일 인식 요청에만 사용됩니다.{' '}
               <a href="https://openrouter.ai/keys" target="_blank" rel="noreferrer">키 발급</a>
+            </div>
+            <div style={{ display: 'flex', gap: 20, marginTop: 4 }}>
+              <button onClick={() => { onClose(); onImport('timetable') }} style={linkBtn}>시간표 파일 가져오기</button>
+              <button onClick={() => { onClose(); onImport('schedule') }} style={linkBtn}>학사일정 파일 가져오기</button>
             </div>
           </div>
         </Sec>

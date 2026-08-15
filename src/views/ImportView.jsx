@@ -64,7 +64,7 @@ export default function ImportView({ data, setData, go, goImport, setSnack, kind
   }
 
   return (
-    <div style={{ maxWidth: 1040, margin: '0 auto' }}>
+    <div style={{ width: '100%', maxWidth: 1040, margin: '0 auto' }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 18, paddingBottom: 22 }}>
         <button onClick={() => go(back)} style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: SUB }}>{backLabel}</button>
         <div style={{ fontSize: 16, fontWeight: 700 }}>파일에서 가져오기</div>
@@ -79,23 +79,30 @@ export default function ImportView({ data, setData, go, goImport, setSnack, kind
             onDragOver={e => e.preventDefault()}
             onDrop={e => { e.preventDefault(); if (hasKey) run(e.dataTransfer.files[0]) }}
             style={{
-              border: '1px dashed ' + LINE, borderRadius: 6, background: '#FFFFFF', padding: '64px 0',
-              textAlign: 'center', cursor: hasKey ? 'pointer' : 'default',
+              maxWidth: 520, margin: '28px auto 0', border: '1.5px dashed #C2BDB4', borderRadius: 12,
+              background: '#FFFFFF', padding: '52px 28px', textAlign: 'center',
+              cursor: hasKey ? 'pointer' : 'default', boxSizing: 'border-box',
             }}
           >
+            <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke={hasKey ? GREEN : FAINT} strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" style={{ display: 'block', margin: '0 auto' }}>
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 8 12 3 17 8" />
+              <line x1="12" y1="3" x2="12" y2="15" />
+            </svg>
             {hasKey ? (
               <>
-                <div style={{ fontSize: 14, fontWeight: 500 }}>{kind === 'timetable' ? '시간표' : '학사일정'} 파일을 선택하거나 끌어다 놓으세요</div>
-                <div style={{ fontSize: 13, color: SUB, marginTop: 8 }}>엑셀 · CSV · PDF · 이미지</div>
+                <div style={{ fontSize: 15, fontWeight: 700, marginTop: 16 }}>{kind === 'timetable' ? '시간표' : '학사일정'} 파일 올리기</div>
+                <div style={{ fontSize: 13, color: SUB, marginTop: 7 }}>누르거나 파일을 끌어다 놓으세요</div>
+                <div style={{ display: 'inline-block', marginTop: 14, fontSize: 12, color: FAINT, background: '#F4F2ED', borderRadius: 999, padding: '4px 12px' }}>엑셀 · CSV · PDF · 이미지</div>
               </>
             ) : (
               <>
-                <div style={{ fontSize: 14, fontWeight: 500 }}>파일 인식을 사용하려면 API 키가 필요합니다</div>
-                <button onClick={() => go('settings')} style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, color: GREEN, marginTop: 8 }}>설정에서 등록</button>
+                <div style={{ fontSize: 15, fontWeight: 700, marginTop: 16 }}>파일 인식을 사용하려면 API 키가 필요합니다</div>
+                <div style={{ fontSize: 13, color: SUB, marginTop: 7 }}>설정 &gt; 파일 인식에 OpenRouter 키를 등록해주세요.</div>
               </>
             )}
           </div>
-          {error && <div style={{ marginTop: 14, fontSize: 13, color: '#B4552D' }}>{error}</div>}
+          {error && <div style={{ maxWidth: 520, margin: '14px auto 0', fontSize: 13, color: '#B4552D', textAlign: 'center' }}>{error}</div>}
           <input ref={fileRef} type="file" accept=".xlsx,.xls,.csv,.pdf,image/*" style={{ display: 'none' }} onChange={e => run(e.target.files[0])} />
         </div>
       )}
