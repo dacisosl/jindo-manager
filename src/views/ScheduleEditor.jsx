@@ -1,12 +1,13 @@
 import React, { useState } from 'react'
 import { DAYS, GREEN, FAINT, INK, LINE, LINE_SOFT, RED, SUB, fromISO, toISO } from '../logic.js'
-import { CalendarIcon } from './ScheduleCalendar.jsx'
+import { CalendarIcon, XMark, TYPE_COLOR } from './ScheduleCalendar.jsx'
 
 const TYPES = ['휴업일', '행사', '고사', '개인']
 
 // 일정 등록 폼 + 목록. 최초 설정 화면과 일정 화면이 함께 쓴다.
 // 기간은 시작일~종료일 두 칸(같으면 하루), "+ 기간"으로 띄엄띄엄 여러 구간을 한 번에 넣는다.
 export default function ScheduleEditor({ data, setData, computed, setSnack, maxHeight, onImport, onToggleView, fill = false }) {
+  const min = !!data.cfg.minimal
   const todayISO = toISO(new Date())
   const initDate = data.semStart && todayISO < data.semStart ? data.semStart : todayISO
   const [ranges, setRanges] = useState([{ start: initDate, end: initDate }])
@@ -94,8 +95,22 @@ export default function ScheduleEditor({ data, setData, computed, setSnack, maxH
         onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add() } }}
         style={{ borderTop: '1px solid ' + LINE, borderBottom: '1px solid ' + LINE, padding: '12px 0 14px', flex: 'none' }}
       >
-        <div style={{ display: 'flex', gap: 14, alignItems: 'baseline', flexWrap: 'wrap' }}>
-          {TYPES.map(tp => (
+        <div style={{ display: 'flex', gap: min ? 8 : 14, alignItems: 'center', flexWrap: 'wrap' }}>
+          {TYPES.map(tp => (min ? (
+            // 미니멀: 글자 없이 유형 색 X 만
+            <button
+              key={tp}
+              onClick={() => patchSched({ type: tp })}
+              title={tp}
+              style={{
+                width: 24, height: 24, borderRadius: 5, cursor: 'pointer', boxSizing: 'border-box',
+                border: sched.type === tp ? '2px solid ' + INK : '1px solid rgba(26,26,26,0.15)',
+                background: '#FFFFFF', display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}
+            >
+              <XMark color={TYPE_COLOR[tp]} />
+            </button>
+          ) : (
             <button
               key={tp}
               onClick={() => patchSched({ type: tp })}
@@ -108,7 +123,23 @@ export default function ScheduleEditor({ data, setData, computed, setSnack, maxH
             >
               {tp}
             </button>
-          ))}
+          )))}
+          {/* 아이콘은 유형 줄 오른쪽 끝에 — 기간 줄이 넘치지 않게 */}
+          <div style={{ flex: 1 }} />
+          {onToggleView && (
+            <button onClick={onToggleView} title="달력으로 보기" className="hov" style={iconBtnS}>
+              <CalendarIcon />
+            </button>
+          )}
+          {onImport && (
+            <button onClick={onImport} title="학사일정 파일에서 가져오기" className="hov" style={iconBtnS}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+                <polyline points="7 8 12 3 17 8" />
+                <line x1="12" y1="3" x2="12" y2="15" />
+              </svg>
+            </button>
+          )}
         </div>
 
         {/* 기간 여러 줄 — 6.10~6.12, 7.1~7.3 처럼 띄엄띄엄 골라 한 번에 넣는다 */}
@@ -121,26 +152,9 @@ export default function ScheduleEditor({ data, setData, computed, setSnack, maxH
               <button onClick={() => removeRange(i)} title="이 기간 빼기" style={{ ...linkBtn(FAINT), fontSize: 15, lineHeight: 1 }}>×</button>
             )}
             {i === ranges.length - 1 && (
-              <button onClick={addRange} style={{ ...linkBtn(GREEN), fontSize: 12, fontWeight: 700 }}>+ 기간</button>
-            )}
-            {i === 0 && (onImport || onToggleView) && (
-              <>
-                <div style={{ flex: 1 }} />
-                {onToggleView && (
-                  <button onClick={onToggleView} title="달력으로 보기" className="hov" style={iconBtnS}>
-                    <CalendarIcon />
-                  </button>
-                )}
-                {onImport && (
-                  <button onClick={onImport} title="학사일정 파일에서 가져오기" className="hov" style={iconBtnS}>
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-                      <polyline points="7 8 12 3 17 8" />
-                      <line x1="12" y1="3" x2="12" y2="15" />
-                    </svg>
-                  </button>
-                )}
-              </>
+              <button onClick={addRange} title="기간 추가" style={{ ...linkBtn(GREEN), fontSize: min ? 16 : 12, fontWeight: 700, lineHeight: 1 }}>
+                {min ? '+' : '+ 기간'}
+              </button>
             )}
           </div>
         ))}
@@ -152,7 +166,21 @@ export default function ScheduleEditor({ data, setData, computed, setSnack, maxH
             placeholder="일정 이름"
             style={{ ...uInput, flex: 1, minWidth: 0 }}
           />
-          <button onClick={add} style={{ ...linkBtn(GREEN), fontSize: 14, fontWeight: 700 }}>추가</button>
+          {min ? (
+            <button
+              onClick={add}
+              title="추가"
+              style={{
+                width: 26, height: 26, border: 'none', borderRadius: '50%', flex: 'none',
+                background: sched.name.trim() ? GREEN : '#E4E1DA', color: '#FFFFFF',
+                cursor: sched.name.trim() ? 'pointer' : 'default', fontSize: 16, fontWeight: 700, lineHeight: 1,
+              }}
+            >
+              +
+            </button>
+          ) : (
+            <button onClick={add} style={{ ...linkBtn(GREEN), fontSize: 14, fontWeight: 700 }}>추가</button>
+          )}
         </div>
       </div>
 
@@ -174,11 +202,15 @@ export default function ScheduleEditor({ data, setData, computed, setSnack, maxH
               const tp = r.type === '휴업일' ? '휴업' : r.type
               const badge = TYPE_BADGE[tp] || TYPE_BADGE.기본
               return (
-                <div key={r.id} style={{ display: 'grid', gridTemplateColumns: '72px 1fr auto auto', gap: 10, padding: '11px 0', borderBottom: '1px solid ' + LINE_SOFT, fontSize: 14, alignItems: 'center' }}>
+                <div key={r.id} style={{ display: 'grid', gridTemplateColumns: '72px 1fr auto auto', gap: 10, padding: min ? '8px 0' : '11px 0', borderBottom: '1px solid ' + LINE_SOFT, fontSize: 14, alignItems: 'center' }}>
                   <div style={{ color: SUB, fontSize: 13 }}>{r.date}</div>
                   <div style={{ fontWeight: 500, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{r.name}</div>
-                  <span style={{ fontSize: 10.5, fontWeight: 700, padding: '3px 7px', borderRadius: 4, lineHeight: 1, background: badge.bg, color: badge.fg, flex: 'none' }}>{tp}</span>
-                  <button onClick={() => remove(r.id)} style={{ ...linkBtn(FAINT), fontSize: 12 }}>삭제</button>
+                  {min ? (
+                    <span title={tp} style={{ display: 'flex', flex: 'none' }}><XMark color={TYPE_COLOR[r.type] || SUB} /></span>
+                  ) : (
+                    <span style={{ fontSize: 10.5, fontWeight: 700, padding: '3px 7px', borderRadius: 4, lineHeight: 1, background: badge.bg, color: badge.fg, flex: 'none' }}>{tp}</span>
+                  )}
+                  <button onClick={() => remove(r.id)} title="삭제" style={{ ...linkBtn(FAINT), fontSize: min ? 15 : 12, lineHeight: 1 }}>{min ? '×' : '삭제'}</button>
                 </div>
               )
             })}

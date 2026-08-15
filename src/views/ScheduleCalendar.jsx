@@ -4,7 +4,7 @@ import useWindowWidth from '../useWindowWidth.js'
 
 // 미니멀 모드의 일정: 달력 뷰.
 // 일정이 있는 날은 유형 색 X 표시. 빈 날을 눌러 추가, 드래그(모바일은 두 번 탭)로 기간.
-const TYPE_COLOR = { 고사: '#A32D2D', 행사: '#BA7517', 휴업일: '#3F5C4C', 개인: '#185FA5' }
+export const TYPE_COLOR = { 고사: '#A32D2D', 행사: '#BA7517', 휴업일: '#3F5C4C', 개인: '#185FA5' }
 // 수업이 없는 날임을 한눈에 알 수 있게 칸 전체에 옅은 배경도 함께 깐다
 const TYPE_BG = { 고사: '#F7E7E4', 행사: '#F8EEDA', 휴업일: '#E6ECE7', 개인: '#E4EBF5' }
 const TYPES = ['휴업일', '행사', '고사', '개인']
@@ -308,7 +308,7 @@ export function CalendarIcon() {
   )
 }
 
-function XMark({ color }) {
+export function XMark({ color }) {
   return (
     <svg width="10" height="10" viewBox="0 0 10 10">
       <line x1="1.5" y1="1.5" x2="8.5" y2="8.5" stroke={color} strokeWidth="2.2" strokeLinecap="round" />
