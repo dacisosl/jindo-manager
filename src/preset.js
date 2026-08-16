@@ -23,7 +23,10 @@ function fromB64(str) {
 }
 
 async function deriveKey(password, salt) {
-  const base = await crypto.subtle.importKey('raw', enc.encode(password), 'PBKDF2', false, ['deriveKey'])
+  // 한글은 기기마다 조합 방식(NFC/NFD)이 달라 같은 글자라도 바이트가 달라진다.
+  // 양쪽에서 NFC 로 맞추고, 앞뒤 공백과 대소문자 차이는 무시한다.
+  const normalized = password.trim().toLowerCase().normalize('NFC')
+  const base = await crypto.subtle.importKey('raw', enc.encode(normalized), 'PBKDF2', false, ['deriveKey'])
   return crypto.subtle.deriveKey(
     { name: 'PBKDF2', salt, iterations: PBKDF2_ITER, hash: 'SHA-256' },
     base,

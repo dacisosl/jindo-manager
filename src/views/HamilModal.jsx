@@ -53,6 +53,8 @@ export default function HamilModal({ data, setData, setSnack, onClose }) {
       setFound(pick(teachers, q))
       setState('found')
     } catch (e) {
+      // 기억해 둔 암호가 더 이상 맞지 않으면 지워서 다시 입력받는다
+      if (e.message === 'BADPW') localStorage.removeItem(PW_KEY)
       const msg = {
         NOPW: '학교 공용 암호를 입력해주세요.',
         NOFILE: '교사 데이터 파일을 찾을 수 없습니다. 학교에서 받은 파일을 열어주세요.',
