@@ -3,7 +3,50 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- 보안: GitHub Pages 는 응답 헤더를 지정할 수 없어 meta 로 걸 수 있는 것만 적용한다 -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'self';
+               script-src 'self' 'wasm-unsafe-eval' blob:;
+               style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net;
+               font-src 'self' https://cdn.jsdelivr.net;
+               img-src 'self' data: blob:;
+               connect-src 'self' https://openrouter.ai https://cdn.jsdelivr.net;
+               worker-src 'self' blob:;
+               child-src 'self' blob:;
+               frame-ancestors 'none';
+               base-uri 'self';
+               form-action 'self';
+               object-src 'none'"
+    />
+    <meta name="referrer" content="strict-origin-when-cross-origin" />
+
     <title>진도계획표</title>
+    <meta
+      name="description"
+      content="시간표와 학사일정으로 반별 수업 차시를 자동 계산하는 교사용 진도 관리 도구. 결손 처리 시 이후 차시가 자동으로 조정되고, 모든 자료는 브라우저에만 저장됩니다."
+    />
+    <meta name="theme-color" content="#0F5C4D" />
+
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="진도계획표" />
+    <meta property="og:title" content="진도계획표 — 교사용 수업 차시 관리" />
+    <meta
+      property="og:description"
+      content="시간표와 학사일정으로 반별 차시를 자동 계산합니다. 결손을 처리하면 뒤 차시가 저절로 밀립니다."
+    />
+    <meta property="og:url" content="https://dacisosl.github.io/jindo-manager/" />
+    <meta property="og:image" content="https://dacisosl.github.io/jindo-manager/haemil.png" />
+    <meta property="og:locale" content="ko_KR" />
+    <meta name="twitter:card" content="summary" />
+    <meta name="twitter:title" content="진도계획표 — 교사용 수업 차시 관리" />
+    <meta
+      name="twitter:description"
+      content="시간표와 학사일정으로 반별 차시를 자동 계산합니다."
+    />
+
+    <link rel="icon" href="./haemil.png" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css" />
   </head>
   <body>

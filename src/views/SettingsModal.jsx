@@ -249,7 +249,17 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
             </div>
           </div>
         </Sec>
-        <div style={{ borderTop: '1px solid ' + LINE }} />
+        <div style={{ borderTop: '1px solid ' + LINE, paddingTop: 14, display: 'flex', alignItems: 'baseline', gap: 12 }}>
+          <a
+            href={import.meta.env.BASE_URL + 'privacy.html'}
+            target="_blank"
+            rel="noreferrer"
+            style={{ fontSize: 13, color: GREEN, textDecoration: 'none' }}
+          >
+            개인정보처리방침
+          </a>
+          <span style={{ fontSize: 12, color: FAINT }}>입력한 내용은 이 브라우저에만 저장됩니다.</span>
+        </div>
       </div>
 
       {confirmClear && (
