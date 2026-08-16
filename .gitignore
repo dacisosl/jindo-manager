@@ -3,5 +3,8 @@ dist
 *.local
 .DS_Store
 
-# 원본 시간표 엑셀은 올리지 않는다 (public/teachers.json 은 배포에 필요해 포함)
+# 원본 시간표 엑셀과 평문 교사 명단은 올리지 않는다.
+# 배포에는 암호화본(public/teachers.enc.json)만 올라간다.
 *.xlsx
+data/
+public/teachers.json

@@ -1,17 +1,21 @@
 import React, { useRef, useState } from 'react'
 import { GREEN, FAINT, LINE, SUB, WARN } from '../logic.js'
 import { coerceData } from '../storage.js'
+import { decryptPreset } from '../preset.js'
 import Modal from './Modal.jsx'
 
 // 해밀고 교사 프리셋: 이름으로 검색해 미리 준비된 시간표·일정 데이터를 통째로 적용한다.
-// 데이터 파일: public/teachers.json — {"teachers":[{"name":"홍길동","data":{...}}]}
-// 개인정보라 공개 저장소에는 올리지 않으므로, 파일이 없으면 배포받은 파일을 직접 열 수 있게 한다.
+// 파일(public/teachers.enc.json)은 학교 공용 암호로 암호화돼 있어, 주소로 내려받아도 내용을 볼 수 없다.
+// 암호는 한 번 넣으면 이 브라우저에 기억된다.
+const PW_KEY = 'jindo.presetPw'
+
 export default function HamilModal({ data, setData, setSnack, onClose }) {
   const [name, setName] = useState('')
+  const [pw, setPw] = useState(() => localStorage.getItem(PW_KEY) || '')
   const [state, setState] = useState('idle') // idle | loading | found | error
   const [error, setError] = useState('')
   const [found, setFound] = useState(null)
-  const [list, setList] = useState(null) // 파일에서 직접 읽어온 교사 목록
+  const [list, setList] = useState(null) // 복호화했거나 파일에서 읽어온 교사 목록
   const fileRef = useRef()
 
   const pick = (teachers, q) => {
@@ -32,16 +36,29 @@ export default function HamilModal({ data, setData, setSnack, onClose }) {
     try {
       let teachers = list
       if (!teachers) {
-        const res = await fetch(import.meta.env.BASE_URL + 'teachers.json', { cache: 'no-store' })
+        if (!pw.trim()) throw new Error('NOPW')
+        const res = await fetch(import.meta.env.BASE_URL + 'teachers.enc.json', { cache: 'no-store' })
         if (!res.ok) throw new Error('NOFILE')
-        const json = await res.json()
+        const pkg = await res.json()
+        let json
+        try {
+          json = await decryptPreset(pkg, pw.trim())
+        } catch {
+          throw new Error('BADPW')
+        }
         teachers = Array.isArray(json.teachers) ? json.teachers : []
         setList(teachers)
+        localStorage.setItem(PW_KEY, pw.trim())
       }
       setFound(pick(teachers, q))
       setState('found')
     } catch (e) {
-      setError(e.message === 'NOFILE' ? '이 기기에 교사 데이터 파일이 없습니다. 학교에서 받은 파일을 열어주세요.' : e.message || '불러오지 못했습니다.')
+      const msg = {
+        NOPW: '학교 공용 암호를 입력해주세요.',
+        NOFILE: '교사 데이터 파일을 찾을 수 없습니다. 학교에서 받은 파일을 열어주세요.',
+        BADPW: '암호가 맞지 않습니다.',
+      }[e.message]
+      setError(msg || e.message || '불러오지 못했습니다.')
       setState('error')
     }
   }
@@ -84,16 +101,35 @@ export default function HamilModal({ data, setData, setSnack, onClose }) {
       <div style={{ marginTop: 6, fontSize: 13, color: SUB }}>
         이름을 검색하면 2026-2학기 시간표와 학사일정으로 바로 시작합니다.
       </div>
-      <div style={{ display: 'flex', gap: 16, alignItems: 'baseline', marginTop: 18 }}>
+
+      {/* 아직 한 번도 푼 적이 없으면 학교 공용 암호를 먼저 받는다 */}
+      {!list && (
+        <div style={{ marginTop: 16 }}>
+          <input
+            type="password"
+            value={pw}
+            onChange={e => setPw(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter') search() }}
+            placeholder="학교 공용 암호"
+            autoComplete="off"
+            style={{ width: '100%', boxSizing: 'border-box', border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', fontSize: 14, padding: '7px 9px' }}
+          />
+          <div style={{ marginTop: 6, fontSize: 12, color: FAINT }}>
+            시간표 파일은 암호로 잠겨 있습니다. 한 번 입력하면 이 브라우저에 기억됩니다.
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: 16, alignItems: 'center', marginTop: 14 }}>
         <input
           value={name}
           onChange={e => setName(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') search() }}
           placeholder="교사 이름"
           autoFocus
-          style={{ flex: 1, border: 'none', borderBottom: '1px solid ' + LINE, background: 'transparent', fontSize: 14, padding: '5px 0' }}
+          style={{ flex: 1, border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', fontSize: 14, padding: '7px 9px' }}
         />
-        <button onClick={search} style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 14, fontWeight: 700, color: GREEN }}>
+        <button onClick={search} style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 14, fontWeight: 700, color: GREEN, flex: 'none' }}>
           검색
         </button>
       </div>
