@@ -41,6 +41,8 @@ export default function Snackbar({ snack, setSnack, data, setData }) {
         boxShadow: '0 8px 24px rgba(26,26,26,0.10)', padding: '12px 18px',
         display: 'flex', gap: 26, alignItems: 'center', width: 'max-content', minWidth: 'min(440px, calc(100vw - 32px))',
         maxWidth: 'min(680px, calc(100vw - 32px))', zIndex: 60, boxSizing: 'border-box',
+        // 모바일에서 달력 아래쪽을 덮으므로, 알림 자체는 터치를 가로채지 않는다 (버튼만 받는다)
+        pointerEvents: 'none',
       }}
     >
       {sn.reasonMode ? (
@@ -50,7 +52,7 @@ export default function Snackbar({ snack, setSnack, data, setData }) {
             onChange={e => setSnack({ ...sn, draft: e.target.value })}
             placeholder="결손 사유"
             autoFocus
-            style={{ flex: 1, border: 'none', borderBottom: '1px solid #D9D9D9', background: 'transparent', fontSize: 13, padding: '3px 0' }}
+            style={{ flex: 1, border: 'none', borderBottom: '1px solid #D9D9D9', background: 'transparent', fontSize: 13, padding: '3px 0', pointerEvents: 'auto' }}
           />
           <button onClick={saveReason} style={btnGreen}>저장</button>
         </>
@@ -69,4 +71,4 @@ export default function Snackbar({ snack, setSnack, data, setData }) {
   )
 }
 
-const btnGreen = { border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, fontWeight: 500, color: GREEN }
+const btnGreen = { border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 13, fontWeight: 500, color: GREEN, pointerEvents: 'auto' }

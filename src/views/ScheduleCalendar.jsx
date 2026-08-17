@@ -26,6 +26,9 @@ export default function ScheduleCalendar({ data, setData, setSnack, computed, su
   // 렌더에 쓰이지 않으므로 state 가 아니라 ref — 같은 틱에 들어오는 mouseenter 도 놓치지 않는다.
   const gesture = useRef(null) // {mode, prev, first, last}
   const touched = useRef(0) // 마지막 터치 시각 — 뒤따라오는 마우스 이벤트를 걸러낸다
+  // 연달아 누를 때 아직 다시 그려지기 전의 값을 보지 않도록 최신 일정을 들고 있는다
+  const latest = useRef(data.events)
+  latest.current = data.events
 
   const monthLabel = ym.y + '.' + String(ym.m + 1).padStart(2, '0')
 
@@ -70,29 +73,30 @@ export default function ScheduleCalendar({ data, setData, setSnack, computed, su
   // 지울 때도 그 하루만 빠지도록 남은 날들로 다시 묶는다. 이름이 있는 일정은 통째로 뺀다.
   const isPlain = e => e.type === OFF && e.name === OFF
   const apply = (iso, mode) => {
-    setData(d => {
-      const covering = d.events.filter(e => e.start <= iso && iso <= e.end)
-      if (mode === 'on' ? covering.length > 0 : covering.length === 0) return d
-      const days = new Set()
-      for (const e of d.events.filter(isPlain)) {
-        let x = fromISO(e.start)
-        const last = fromISO(e.end)
-        while (x <= last) {
-          days.add(toISO(x))
-          x = new Date(x.getFullYear(), x.getMonth(), x.getDate() + 1)
-        }
+    const events = latest.current
+    const covering = events.filter(e => e.start <= iso && iso <= e.end)
+    if (mode === 'on' ? covering.length > 0 : covering.length === 0) return
+    const days = new Set()
+    for (const e of events.filter(isPlain)) {
+      let x = fromISO(e.start)
+      const last = fromISO(e.end)
+      while (x <= last) {
+        days.add(toISO(x))
+        x = new Date(x.getFullYear(), x.getMonth(), x.getDate() + 1)
       }
-      let rest = d.events.filter(e => !isPlain(e))
-      if (mode === 'off') {
-        days.delete(iso)
-        rest = rest.filter(e => !(e.start <= iso && iso <= e.end))
-      } else {
-        days.add(iso)
-      }
-      const base = Date.now()
-      const merged = mergeDates([...days]).map((r, i) => ({ id: base + i, start: r.start, end: r.end, name: OFF, type: OFF }))
-      return { ...d, events: [...rest, ...merged] }
-    })
+    }
+    let rest = events.filter(e => !isPlain(e))
+    if (mode === 'off') {
+      days.delete(iso)
+      rest = rest.filter(e => !(e.start <= iso && iso <= e.end))
+    } else {
+      days.add(iso)
+    }
+    const base = Date.now()
+    const merged = mergeDates([...days]).map((r, i) => ({ id: base + i, start: r.start, end: r.end, name: OFF, type: OFF }))
+    const next = [...rest, ...merged]
+    latest.current = next
+    setData(d => ({ ...d, events: next }))
   }
 
   const down = (iso, touch) => {
@@ -100,8 +104,10 @@ export default function ScheduleCalendar({ data, setData, setSnack, computed, su
     // 모바일은 터치 뒤에 마우스 이벤트가 한 번 더 따라온다 — 그대로 두면 칠하자마자 지워진다
     if (touch) touched.current = Date.now()
     else if (Date.now() - touched.current < 700) return
-    const mode = eventsOn(iso).length ? 'off' : 'on'
-    gesture.current = { mode, prev: data.events, first: iso, last: iso }
+    // 방금 바꾼 결과가 아직 다시 그려지기 전일 수 있으므로 최신 일정으로 판단한다
+    const events = latest.current
+    const mode = events.some(e => e.start <= iso && iso <= e.end) ? 'off' : 'on'
+    gesture.current = { mode, prev: events, first: iso, last: iso }
     apply(iso, mode)
   }
   const over = iso => {
@@ -130,6 +136,7 @@ export default function ScheduleCalendar({ data, setData, setSnack, computed, su
       text: g.mode === 'off' ? range + ' 일정을 지웠습니다.' : range + ' 수업 없는 날로 등록했습니다.',
       kind: 'events',
       prev: g.prev,
+      ms: a === b ? 3500 : 6000, // 한 칸씩 톡톡 누를 때 알림이 오래 남지 않도록
     })
   }
   // 모바일: 손가락을 끌면 지나간 칸이 함께 칠해진다
@@ -162,7 +169,15 @@ export default function ScheduleCalendar({ data, setData, setSnack, computed, su
         onMouseLeave={up}
         onTouchMove={touchMove}
         onTouchEnd={up}
-        style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', overflow: 'hidden', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', userSelect: 'none', touchAction: paintable ? 'none' : 'auto' }}
+        onTouchCancel={up}
+        style={{
+          border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', overflow: 'hidden',
+          flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column',
+          userSelect: 'none', WebkitUserSelect: 'none',
+          // 길게 눌러도 복사 메뉴가 뜨지 않고, 탭할 때 회색 사각형이 번쩍이지 않게
+          WebkitTouchCallout: 'none', WebkitTapHighlightColor: 'transparent',
+          touchAction: paintable ? 'none' : 'auto',
+        }}
       >
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', background: '#F4F2ED', flex: 'none' }}>
           {['일', '월', '화', '수', '목', '금', '토'].map((d, i) => (

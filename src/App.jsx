@@ -48,7 +48,8 @@ export default function App() {
   const patch = p => setData(d => ({ ...d, ...p }))
   const setSnack = sn => {
     clearTimeout(snackT.current)
-    if (sn) snackT.current = setTimeout(() => setSnackState(null), 9000)
+    // 달력을 연달아 칠할 때처럼 자주 뜨는 알림은 짧게 (sn.ms)
+    if (sn) snackT.current = setTimeout(() => setSnackState(null), sn.ms || 9000)
     setSnackState(sn)
   }
 
