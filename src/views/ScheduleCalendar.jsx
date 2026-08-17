@@ -8,7 +8,8 @@ import useWindowWidth from '../useWindowWidth.js'
 export const TYPE_COLOR = { 고사: '#A32D2D', 행사: '#BA7517', 휴업일: '#3F5C4C', 개인: '#185FA5' }
 // 수업이 없는 날임을 한눈에 알 수 있게 칸 전체에 옅은 배경도 함께 깐다
 export const TYPE_BG = { 고사: '#F7E7E4', 행사: '#F8EEDA', 휴업일: '#E6ECE7', 개인: '#E4EBF5' }
-const OFF = '휴업일'
+// 달력에서 칠한 날은 '개인'으로 들어간다 — 학교 전체 휴업일이 아니라 내 수업이 빠지는 날이므로
+const OFF = '개인'
 
 // computed·subject 를 주면 날짜 밑에 그 날의 최소 차시를 동그라미로 표시한다.
 // paintable 이 false 면 보기 전용 (차시별 내용의 달력 탭).
@@ -24,6 +25,7 @@ export default function ScheduleCalendar({ data, setData, setSnack, computed, su
   // 한 번의 칠하기(누름→끌기→뗌)를 통째로 되돌릴 수 있게 시작 시점을 기록해 둔다.
   // 렌더에 쓰이지 않으므로 state 가 아니라 ref — 같은 틱에 들어오는 mouseenter 도 놓치지 않는다.
   const gesture = useRef(null) // {mode, prev, first, last}
+  const touched = useRef(0) // 마지막 터치 시각 — 뒤따라오는 마우스 이벤트를 걸러낸다
 
   const monthLabel = ym.y + '.' + String(ym.m + 1).padStart(2, '0')
 
@@ -93,8 +95,11 @@ export default function ScheduleCalendar({ data, setData, setSnack, computed, su
     })
   }
 
-  const down = iso => {
+  const down = (iso, touch) => {
     if (!paintable) return
+    // 모바일은 터치 뒤에 마우스 이벤트가 한 번 더 따라온다 — 그대로 두면 칠하자마자 지워진다
+    if (touch) touched.current = Date.now()
+    else if (Date.now() - touched.current < 700) return
     const mode = eventsOn(iso).length ? 'off' : 'on'
     gesture.current = { mode, prev: data.events, first: iso, last: iso }
     apply(iso, mode)
@@ -102,8 +107,17 @@ export default function ScheduleCalendar({ data, setData, setSnack, computed, su
   const over = iso => {
     const g = gesture.current
     if (!g || g.last === iso) return
+    // 손가락·마우스가 빠르게 지나가면 중간 칸을 건너뛰므로 사이를 채운다
+    const a = g.last < iso ? g.last : iso
+    const b = g.last < iso ? iso : g.last
+    let x = fromISO(a)
+    const end = fromISO(b)
+    while (x <= end) {
+      const day = toISO(x)
+      if (day !== g.last) apply(day, g.mode)
+      x = new Date(x.getFullYear(), x.getMonth(), x.getDate() + 1)
+    }
     g.last = iso
-    apply(iso, g.mode)
   }
   const up = () => {
     const g = gesture.current
@@ -169,9 +183,9 @@ export default function ScheduleCalendar({ data, setData, setSnack, computed, su
                   <div
                     key={cell.iso}
                     data-iso={cell.iso}
-                    onMouseDown={() => down(cell.iso)}
+                    onMouseDown={() => down(cell.iso, false)}
                     onMouseEnter={() => over(cell.iso)}
-                    onTouchStart={() => down(cell.iso)}
+                    onTouchStart={() => down(cell.iso, true)}
                     style={{
                       position: 'relative', minHeight: isMobile ? 44 : 0, padding: '4px 0 2px',
                       borderLeft: '1px solid ' + LINE_SOFT, cursor: paintable ? 'pointer' : 'default', boxSizing: 'border-box',
