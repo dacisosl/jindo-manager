@@ -132,6 +132,18 @@ export function sectionTarget(list, today) {
   return list[j].num
 }
 
+// 흩어진 날짜들을 연속 구간으로 묶는다 (17,18,19 → 17~19 한 건)
+export function mergeDates(isoList) {
+  const sorted = [...new Set(isoList)].sort()
+  const out = []
+  for (const iso of sorted) {
+    const last = out[out.length - 1]
+    if (last && toISO(addDays(fromISO(last.end), 1)) === iso) last.end = iso
+    else out.push({ start: iso, end: iso })
+  }
+  return out
+}
+
 export function exportCSV(sessions) {
   const lines = [['date', 'period', 'class', 'session'].join(',')]
   Object.keys(sessions)

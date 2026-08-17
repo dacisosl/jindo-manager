@@ -1,14 +1,15 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { GREEN, INK, LINE, LINE_SOFT, FAINT, SUB, TINTS, colorOf, subjectOf } from '../logic.js'
+import { GREEN, INK, LINE, LINE_SOFT, FAINT, RED, SUB, TINTS, colorOf, subjectOf } from '../logic.js'
 import useWindowWidth from '../useWindowWidth.js'
 
 // 시간표 입력 두 가지 방식:
 // 1) 블록 선택: 칸들을 눌러 고르고 [반 등록]으로 한 번에 배정 (기본, 모바일 주력)
 // 2) 칠하기: 팔레트에서 반을 고른 뒤 드래그/탭으로 칠하기
-export default function TimetableEditor({ data, setData, cellHeight = 46, compact = false, fill = false, leading = null }) {
+export default function TimetableEditor({ data, setData, setSnack, cellHeight = 46, compact = false, fill = false, leading = null }) {
   const { isMobile } = useWindowWidth()
   const min = !!data.cfg.minimal
   const [selTool, setSelTool] = useState('select')
+  const [editing, setEditing] = useState(false) // 반 칩에 삭제(×) 표시
   const [selected, setSelected] = useState({}) // {'dow-p': true}
   const [regOpen, setRegOpen] = useState(false)
   const [newClass, setNewClass] = useState('')
@@ -72,6 +73,23 @@ export default function TimetableEditor({ data, setData, cellHeight = 46, compac
     setSelected({})
     setRegOpen(false)
     setNewClass('')
+  }
+
+  // 반 삭제 — 시간표 칸·색·과목 지정까지 함께 지운다 (되돌리기 가능)
+  const removeClass = cls => {
+    const prev = data
+    setData(d => {
+      const pat = {}
+      Object.keys(d.pattern).forEach(k => { if (d.pattern[k] !== cls) pat[k] = d.pattern[k] })
+      const colors = { ...d.colors }
+      const clsSubject = { ...d.clsSubject }
+      delete colors[cls]
+      delete clsSubject[cls]
+      return { ...d, pattern: pat, classes: d.classes.filter(c => c !== cls), colors, clsSubject }
+    })
+    if (selTool === cls) setSelTool('select')
+    setChipPop(null)
+    if (setSnack) setSnack({ text: cls + ' 반을 지웠습니다.', kind: 'all', prev })
   }
 
   const setColor = (cls, color) => setData(d => ({ ...d, colors: { ...d.colors, [cls]: color } }))
@@ -221,6 +239,21 @@ export default function TimetableEditor({ data, setData, cellHeight = 46, compac
                 {c}
               </button>
             )}
+            {/* 편집 중일 때만 뜨는 삭제 배지 */}
+            {editing && (
+              <button
+                onClick={e => { e.stopPropagation(); removeClass(c) }}
+                title={c + ' 반 삭제'}
+                style={{
+                  position: 'absolute', top: -7, right: -7, width: 16, height: 16, borderRadius: '50%',
+                  border: '1px solid #FFFFFF', background: RED, color: '#FFFFFF', cursor: 'pointer',
+                  fontSize: 11, fontWeight: 700, lineHeight: 1, padding: 0, zIndex: 2,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}
+              >
+                ×
+              </button>
+            )}
             {chipPop === c && (
               <div
                 onClick={e => e.stopPropagation()}
@@ -267,6 +300,20 @@ export default function TimetableEditor({ data, setData, cellHeight = 46, compac
         >
           <EraserIcon />
         </button>
+        {/* 반 편집 — 켜면 각 반 칩에 삭제 배지가 뜬다 */}
+        {data.classes.length > 0 && (
+          <button
+            onClick={() => setEditing(v => !v)}
+            title={editing ? '반 편집 끝내기' : '반 삭제하기'}
+            style={{
+              border: editing ? '2px solid ' + GREEN : '1px solid ' + LINE, borderRadius: 6,
+              background: '#FFFFFF', padding: min ? 3 : 5, cursor: 'pointer', display: 'flex',
+              color: editing ? GREEN : SUB, flex: 'none', boxSizing: 'border-box',
+            }}
+          >
+            <PencilIcon />
+          </button>
+        )}
         {(!isMobile || min) && (
           <>
             <div style={{ flex: 1 }} />
@@ -359,6 +406,15 @@ export default function TimetableEditor({ data, setData, cellHeight = 46, compac
 const fieldStyle = {
   border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF',
   fontSize: 14, padding: '7px 9px', boxSizing: 'border-box',
+}
+
+function PencilIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 20h9" />
+      <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z" />
+    </svg>
+  )
 }
 
 function EraserIcon() {

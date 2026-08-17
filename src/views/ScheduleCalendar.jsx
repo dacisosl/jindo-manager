@@ -1,16 +1,18 @@
 import React, { useMemo, useRef, useState } from 'react'
-import { DAYS, GREEN, INK, FAINT, LINE, LINE_SOFT, SUB, colorOf, subjectOf, fromISO, toISO } from '../logic.js'
+import { GREEN, INK, FAINT, LINE, LINE_SOFT, SUB, colorOf, subjectOf, fromISO, toISO, mergeDates, md } from '../logic.js'
 import useWindowWidth from '../useWindowWidth.js'
 
-// 미니멀 모드의 일정: 달력 뷰.
-// 일정이 있는 날은 유형 색 X 표시. 빈 날을 눌러 추가, 드래그(모바일은 두 번 탭)로 기간.
+// 일정 달력 뷰 — 이름을 따로 넣지 않고 수업 없는 날만 칠하는 간편 등록.
+// 누르거나 죽 끌면 그 날이 휴업일로 들어가고, 이미 칠해진 날을 누르면 지워진다.
+// 이름·유형이 필요한 일정(고사·행사 등)은 일정뷰에서 넣는다.
 export const TYPE_COLOR = { 고사: '#A32D2D', 행사: '#BA7517', 휴업일: '#3F5C4C', 개인: '#185FA5' }
 // 수업이 없는 날임을 한눈에 알 수 있게 칸 전체에 옅은 배경도 함께 깐다
-const TYPE_BG = { 고사: '#F7E7E4', 행사: '#F8EEDA', 휴업일: '#E6ECE7', 개인: '#E4EBF5' }
-const TYPES = ['휴업일', '행사', '고사', '개인']
+export const TYPE_BG = { 고사: '#F7E7E4', 행사: '#F8EEDA', 휴업일: '#E6ECE7', 개인: '#E4EBF5' }
+const OFF = '휴업일'
 
 // computed·subject 를 주면 날짜 밑에 그 날의 최소 차시를 동그라미로 표시한다.
-export default function ScheduleCalendar({ data, setData, setSnack, computed, subject, onToggleView }) {
+// paintable 이 false 면 보기 전용 (차시별 내용의 달력 탭).
+export default function ScheduleCalendar({ data, setData, setSnack, computed, subject, onToggleView, actions, paintable = false }) {
   const { isMobile } = useWindowWidth()
   const today = toISO(new Date())
   const initMonth = () => {
@@ -19,10 +21,9 @@ export default function ScheduleCalendar({ data, setData, setSnack, computed, su
     return { y: d.getFullYear(), m: d.getMonth() }
   }
   const [ym, setYm] = useState(initMonth)
-  const [drag, setDrag] = useState(null) // {start, end} 드래그 중 구간
-  const [pick, setPick] = useState(null) // {start, end, name, type} 팝오버
-  const [tapStart, setTapStart] = useState(null) // 모바일 두 탭 방식의 첫 탭
-  const dragging = useRef(false)
+  // 한 번의 칠하기(누름→끌기→뗌)를 통째로 되돌릴 수 있게 시작 시점을 기록해 둔다.
+  // 렌더에 쓰이지 않으므로 state 가 아니라 ref — 같은 틱에 들어오는 mouseenter 도 놓치지 않는다.
+  const gesture = useRef(null) // {mode, prev, first, last}
 
   const monthLabel = ym.y + '.' + String(ym.m + 1).padStart(2, '0')
 
@@ -61,68 +62,80 @@ export default function ScheduleCalendar({ data, setData, setSnack, computed, su
       const nd = new Date(y, m + d, 1)
       return { y: nd.getFullYear(), m: nd.getMonth() }
     })
-    setPick(null)
-    setTapStart(null)
   }
 
-  const openPick = (start, end) => {
-    const a = start <= end ? start : end
-    const b = start <= end ? end : start
-    setPick({ start: a, end: b, name: '', type: '행사' })
-  }
-
-  // 데스크톱: 드래그로 기간 선택
-  const onDown = iso => {
-    if (isMobile) return
-    dragging.current = true
-    setDrag({ start: iso, end: iso })
-  }
-  const onEnter = iso => {
-    if (!isMobile && dragging.current) setDrag(d => (d ? { ...d, end: iso } : d))
-  }
-  const onUp = () => {
-    if (isMobile || !dragging.current) return
-    dragging.current = false
-    setDrag(d => {
-      if (d) openPick(d.start, d.end)
-      return null
+  // 칠하기 — 이름 없이 휴업일로 넣고, 이어붙은 날은 한 건으로 묶는다.
+  // 지울 때도 그 하루만 빠지도록 남은 날들로 다시 묶는다. 이름이 있는 일정은 통째로 뺀다.
+  const isPlain = e => e.type === OFF && e.name === OFF
+  const apply = (iso, mode) => {
+    setData(d => {
+      const covering = d.events.filter(e => e.start <= iso && iso <= e.end)
+      if (mode === 'on' ? covering.length > 0 : covering.length === 0) return d
+      const days = new Set()
+      for (const e of d.events.filter(isPlain)) {
+        let x = fromISO(e.start)
+        const last = fromISO(e.end)
+        while (x <= last) {
+          days.add(toISO(x))
+          x = new Date(x.getFullYear(), x.getMonth(), x.getDate() + 1)
+        }
+      }
+      let rest = d.events.filter(e => !isPlain(e))
+      if (mode === 'off') {
+        days.delete(iso)
+        rest = rest.filter(e => !(e.start <= iso && iso <= e.end))
+      } else {
+        days.add(iso)
+      }
+      const base = Date.now()
+      const merged = mergeDates([...days]).map((r, i) => ({ id: base + i, start: r.start, end: r.end, name: OFF, type: OFF }))
+      return { ...d, events: [...rest, ...merged] }
     })
   }
 
-  // 모바일: 첫 탭 = 시작일, 두 번째 탭 = 종료일 (같은 날 다시 탭 = 하루)
-  const onTap = iso => {
-    if (!isMobile) return
-    if (!tapStart) {
-      setTapStart(iso)
-      setPick(null)
-    } else {
-      openPick(tapStart, iso)
-      setTapStart(null)
-    }
+  const down = iso => {
+    if (!paintable) return
+    const mode = eventsOn(iso).length ? 'off' : 'on'
+    gesture.current = { mode, prev: data.events, first: iso, last: iso }
+    apply(iso, mode)
   }
-
-  const add = () => {
-    if (!pick.name.trim()) return
-    const ev = { id: Date.now(), start: pick.start, end: pick.end, name: pick.name.trim(), type: pick.type }
-    setData(d => ({ ...d, events: [...d.events, ev] }))
-    setSnack({ text: '일정을 추가했습니다.', kind: 'event', id: ev.id })
-    setPick(null)
+  const over = iso => {
+    const g = gesture.current
+    if (!g || g.last === iso) return
+    g.last = iso
+    apply(iso, g.mode)
   }
-
-  const remove = id => {
-    setData(d => ({ ...d, events: d.events.filter(e => e.id !== id) }))
-    setPick(null)
+  const up = () => {
+    const g = gesture.current
+    if (!g) return
+    gesture.current = null
+    const a = g.first <= g.last ? g.first : g.last
+    const b = g.first <= g.last ? g.last : g.first
+    const range = a === b ? md(a) : md(a) + '~' + md(b)
+    setSnack({
+      text: g.mode === 'off' ? range + ' 일정을 지웠습니다.' : range + ' 수업 없는 날로 등록했습니다.',
+      kind: 'events',
+      prev: g.prev,
+    })
   }
-
-  const inRange = (iso, r) => r && iso >= (r.start <= r.end ? r.start : r.end) && iso <= (r.start <= r.end ? r.end : r.start)
+  // 모바일: 손가락을 끌면 지나간 칸이 함께 칠해진다
+  const touchMove = e => {
+    if (!gesture.current) return
+    const t = e.touches[0]
+    const el = document.elementFromPoint(t.clientX, t.clientY)
+    const box = el && el.closest('[data-iso]')
+    if (box) over(box.dataset.iso)
+  }
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%', position: 'relative' }} onMouseUp={onUp} onMouseLeave={onUp}>
+    <div style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%', position: 'relative' }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 4, marginBottom: 8, flex: 'none' }}>
-        <span style={{ fontSize: 15, fontWeight: 700, letterSpacing: '-0.01em' }}>{monthLabel}</span>
+        {/* 월 이동은 제목 바로 옆에 붙여 눈에 띄게 */}
+        <button className="hov" onClick={() => moveMonth(-1)} title="이전 달" style={calNav}>‹</button>
+        <span style={{ fontSize: 15, fontWeight: 800, letterSpacing: '-0.01em', minWidth: 62, textAlign: 'center' }}>{monthLabel}</span>
+        <button className="hov" onClick={() => moveMonth(1)} title="다음 달" style={calNav}>›</button>
         <div style={{ flex: 1 }} />
-        <button className="hov" onClick={() => moveMonth(-1)} style={calNav}>‹</button>
-        <button className="hov" onClick={() => moveMonth(1)} style={calNav}>›</button>
+        {actions}
         {onToggleView && (
           <button className="hov" onClick={onToggleView} title="목록으로 보기" style={{ border: 'none', background: 'none', padding: 5, borderRadius: 6, cursor: 'pointer', color: SUB, display: 'flex', flex: 'none' }}>
             <ListIcon />
@@ -130,7 +143,13 @@ export default function ScheduleCalendar({ data, setData, setSnack, computed, su
         )}
       </div>
 
-      <div style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', overflow: 'hidden', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', userSelect: 'none' }}>
+      <div
+        onMouseUp={up}
+        onMouseLeave={up}
+        onTouchMove={touchMove}
+        onTouchEnd={up}
+        style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', overflow: 'hidden', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', userSelect: 'none', touchAction: paintable ? 'none' : 'auto' }}
+      >
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7,1fr)', background: '#F4F2ED', flex: 'none' }}>
           {['일', '월', '화', '수', '목', '금', '토'].map((d, i) => (
             <div key={d} style={{ padding: '5px 0', textAlign: 'center', fontSize: 11, fontWeight: 700, color: i === 0 ? '#B0574A' : i === 6 ? '#4A6B9B' : SUB }}>{d}</div>
@@ -142,20 +161,21 @@ export default function ScheduleCalendar({ data, setData, setSnack, computed, su
               {week.map(cell => {
                 const evs = eventsOn(cell.iso)
                 const isToday = cell.iso === today
-                const selected = inRange(cell.iso, drag) || (tapStart === cell.iso) || (pick && inRange(cell.iso, pick))
                 const types = [...new Set(evs.map(e => e.type))].slice(0, 2)
                 const ses = cell.inMonth ? sessionOn(cell.iso) : null
                 const off = evs.length > 0 // 일정이 있으면 그 날은 수업이 빠진다
+                const plain = evs.length === 1 && evs[0].name === OFF // 간편 등록한 휴업일은 글자 없이 X 만
                 return (
                   <div
                     key={cell.iso}
-                    onMouseDown={() => onDown(cell.iso)}
-                    onMouseEnter={() => onEnter(cell.iso)}
-                    onClick={() => onTap(cell.iso)}
+                    data-iso={cell.iso}
+                    onMouseDown={() => down(cell.iso)}
+                    onMouseEnter={() => over(cell.iso)}
+                    onTouchStart={() => down(cell.iso)}
                     style={{
                       position: 'relative', minHeight: isMobile ? 44 : 0, padding: '4px 0 2px',
-                      borderLeft: '1px solid ' + LINE_SOFT, cursor: 'pointer', boxSizing: 'border-box',
-                      background: selected ? 'rgba(15,92,77,0.10)' : off ? (TYPE_BG[types[0]] || '#EFEDE8') : '#FFFFFF',
+                      borderLeft: '1px solid ' + LINE_SOFT, cursor: paintable ? 'pointer' : 'default', boxSizing: 'border-box',
+                      background: off ? (TYPE_BG[types[0]] || '#EFEDE8') : '#FFFFFF',
                       display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 1,
                       opacity: cell.inMonth ? 1 : 0.32, overflow: 'hidden',
                     }}
@@ -178,7 +198,7 @@ export default function ScheduleCalendar({ data, setData, setSnack, computed, su
                     >
                       {cell.day}
                     </span>
-                    {(off || ses) && (
+                    {(ses || (off && !plain)) && (
                       <span style={{ position: 'relative', display: 'flex', gap: 3, alignItems: 'center', maxWidth: '100%' }}>
                         {ses && (
                           <span
@@ -193,7 +213,7 @@ export default function ScheduleCalendar({ data, setData, setSnack, computed, su
                             {ses.num}
                           </span>
                         )}
-                        {off && (
+                        {off && !plain && (
                           <span
                             style={{
                               fontSize: 9.5, fontWeight: 700, color: TYPE_COLOR[types[0]] || SUB,
@@ -213,78 +233,16 @@ export default function ScheduleCalendar({ data, setData, setSnack, computed, su
         </div>
       </div>
 
-      {isMobile && tapStart && (
-        <div style={{ marginTop: 6, fontSize: 12, color: SUB, textAlign: 'center', flex: 'none' }}>
-          {tapStart.slice(5).replace('-', '.')} 부터 — 종료일을 누르세요
-        </div>
-      )}
-
-      {/* 추가·삭제 팝오버 (모바일은 하단 시트형) */}
-      {pick && (
-        <div
-          onClick={e => e.stopPropagation()}
-          style={
-            isMobile
-              ? { position: 'fixed', left: 10, right: 10, bottom: 12, background: '#FFFFFF', border: '1px solid ' + LINE, borderRadius: 10, boxShadow: '0 10px 30px rgba(26,26,26,0.2)', padding: 14, zIndex: 90 }
-              : { position: 'absolute', left: '50%', transform: 'translateX(-50%)', bottom: 8, width: 250, background: '#FFFFFF', border: '1px solid ' + LINE, borderRadius: 8, boxShadow: '0 10px 28px rgba(26,26,26,0.16)', padding: 12, zIndex: 60 }
-          }
-        >
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 700 }}>
-              {pick.start.slice(5).replace('-', '.')}{pick.end !== pick.start && ' ~ ' + pick.end.slice(5).replace('-', '.')}
-            </span>
-            <div style={{ flex: 1 }} />
-            <button onClick={() => setPick(null)} style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 15, lineHeight: 1, color: FAINT }}>×</button>
-          </div>
-
-          {/* 이 날짜에 걸친 기존 일정 — 삭제 */}
-          {eventsOn(pick.start).map(e => (
-            <div key={e.id} style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 8 }}>
-              <XMark color={TYPE_COLOR[e.type] || SUB} />
-              <span style={{ fontSize: 13, fontWeight: 500, flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{e.name}</span>
-              <button onClick={() => remove(e.id)} style={{ border: 'none', background: 'none', padding: 0, cursor: 'pointer', fontSize: 12, color: FAINT }}>삭제</button>
-            </div>
-          ))}
-
-          <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
-            {TYPES.map(tp => (
-              <button
-                key={tp}
-                onClick={() => setPick(p => ({ ...p, type: tp }))}
-                title={tp}
-                style={{
-                  width: 22, height: 22, borderRadius: 5, cursor: 'pointer', boxSizing: 'border-box',
-                  border: pick.type === tp ? '2px solid ' + INK : '1px solid rgba(26,26,26,0.15)',
-                  background: 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}
-              >
-                <XMark color={TYPE_COLOR[tp]} />
-              </button>
-            ))}
-          </div>
-          <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
-            <input
-              value={pick.name}
-              onChange={e => setPick(p => ({ ...p, name: e.target.value }))}
-              onKeyDown={e => { if (e.key === 'Enter') add() }}
-              placeholder="일정 이름"
-              autoFocus={!isMobile}
-              style={{ flex: 1, minWidth: 0, border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', fontSize: 13, padding: '7px 9px', boxSizing: 'border-box' }}
-            />
-            <button
-              onClick={add}
-              style={{ border: 'none', borderRadius: 6, background: pick.name.trim() ? GREEN : '#E4E1DA', color: '#FFFFFF', padding: '0 14px', cursor: pick.name.trim() ? 'pointer' : 'default', fontSize: 13, fontWeight: 700, flex: 'none' }}
-            >
-              +
-            </button>
-          </div>
+      {paintable && (
+        <div style={{ marginTop: 6, fontSize: 12, color: FAINT, flex: 'none' }}>
+          수업 없는 날을 누르거나 죽 끌어서 칠하세요. 칠한 날을 다시 누르면 지워집니다.
         </div>
       )}
     </div>
   )
 }
 
-function ListIcon() {
+export function ListIcon() {
   return (
     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
       <line x1="8" y1="6" x2="21" y2="6" />
@@ -317,7 +275,8 @@ export function XMark({ color }) {
   )
 }
 
+// 월 이동 — 제목 옆에서 바로 눈에 띄도록 테두리를 준다
 const calNav = {
-  border: 'none', background: 'none', borderRadius: 6, cursor: 'pointer', color: SUB,
-  padding: '2px 10px 4px', fontSize: 18, lineHeight: 1,
+  border: '1px solid ' + LINE, background: '#FFFFFF', borderRadius: 6, cursor: 'pointer', color: INK,
+  padding: '0 9px 3px', fontSize: 17, lineHeight: '22px', height: 26, flex: 'none', fontWeight: 700,
 }

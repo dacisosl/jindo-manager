@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react'
 import introJs from 'intro.js'
 import 'intro.js/introjs.css'
-import { GREEN, INK, FAINT, LINE, SUB, SECTION_TITLE } from '../logic.js'
+import { GREEN, INK, FAINT, LINE, SUB, SECTION_TITLE, CHIP_BTN, CHIP_BTN_OFF } from '../logic.js'
 import TimetableEditor from './TimetableEditor.jsx'
 import ScheduleEditor from './ScheduleEditor.jsx'
-import ScheduleCalendar from './ScheduleCalendar.jsx'
+import ScheduleCalendar, { CalendarIcon, ListIcon } from './ScheduleCalendar.jsx'
 import useWindowWidth from '../useWindowWidth.js'
 import useSplit from '../useSplit.js'
 
@@ -73,6 +73,7 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
     <TimetableEditor
       data={data}
       setData={setData}
+      setSnack={setSnack}
       cellHeight={fit ? 0 : 42}
       compact
       fill={fit}
@@ -90,19 +91,52 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
     </div>
   )
 
-  // 목록/달력을 아이콘으로 전환 (미니멀은 달력이 기본)
-  const calView = data.cfg.schedView == null ? min : data.cfg.schedView === 'cal'
-  const toggleSched = () => setData(d => {
-    const cur = d.cfg.schedView == null ? min : d.cfg.schedView === 'cal'
-    return { ...d, cfg: { ...d.cfg, schedView: cur ? 'list' : 'cal' } }
-  })
+  // 일정 등록 방법. 처음에는 아무것도 펼치지 않고 두 버튼만 보여준다 —
+  // 달력이나 목록이 먼저 보이면 어디부터 손대야 할지 알기 어렵기 때문.
+  const schedView = data.cfg.schedView // null | 'cal' | 'list'
+  const calView = schedView === 'cal'
+  const setView = v => setData(d => ({ ...d, cfg: { ...d.cfg, schedView: v } }))
+
+  // 등록 방법을 한 번 고른 뒤에는 달력뷰/일정뷰 탭으로 오간다
+  const regButtons = (
+    <div style={{ display: 'flex', gap: 6, flex: 'none', alignItems: 'center' }}>
+      <button onClick={() => setView('cal')} title="달력에 칠해서 간편 등록" style={{ ...(calView ? CHIP_BTN : CHIP_BTN_OFF), padding: '7px 12px' }}>
+        <CalendarIcon />
+        달력뷰
+      </button>
+      <button onClick={() => setView('list')} title="이름·기간·유형을 직접 입력" style={{ ...(calView ? CHIP_BTN_OFF : CHIP_BTN), padding: '7px 12px' }}>
+        <ListIcon />
+        일정뷰
+      </button>
+    </div>
+  )
+
+  // 첫 화면 — 큰 버튼 두 개만. 일단 눌러보게 하는 것이 목적이다.
+  const chooser = (
+    <div style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 20 }}>
+      <div style={{ ...SECTION_TITLE, marginBottom: 4 }}>수업이 없는 날을 등록하세요</div>
+      <button onClick={() => setView('cal')} style={bigBtn(true)}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 15, fontWeight: 800 }}>
+          <CalendarIcon />간편등록(추천)
+        </span>
+        <span style={{ fontSize: 12.5, fontWeight: 500, opacity: 0.85 }}>달력에서 쉬는 날을 죽 칠하면 끝</span>
+      </button>
+      <button onClick={() => setView('list')} style={bigBtn(false)}>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 15, fontWeight: 800 }}>
+          <ListIcon />세부등록
+        </span>
+        <span style={{ fontSize: 12.5, fontWeight: 500, color: FAINT }}>이름·기간·유형을 하나씩 입력</span>
+      </button>
+    </div>
+  )
+
   const schedule = (
     <div data-intro-sched style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
-      {calView ? (
-        <ScheduleCalendar data={data} setData={setData} setSnack={setSnack} onToggleView={toggleSched} />
+      {schedView == null ? chooser : calView ? (
+        <ScheduleCalendar data={data} setData={setData} setSnack={setSnack} actions={regButtons} paintable />
       ) : (
         <div style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', padding: '0 12px 10px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          <ScheduleEditor data={data} setData={setData} computed={computed} setSnack={setSnack} onImport={() => goImport('schedule')} onToggleView={toggleSched} fill />
+          <ScheduleEditor data={data} setData={setData} computed={computed} setSnack={setSnack} onImport={() => goImport('schedule')} actions={regButtons} fill />
         </div>
       )}
     </div>
@@ -157,6 +191,14 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
     </div>
   )
 }
+
+// 첫 화면의 큰 선택 버튼 (추천 쪽은 초록 채움)
+const bigBtn = primary => ({
+  width: '100%', maxWidth: 320, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
+  border: '1px solid ' + (primary ? GREEN : LINE), borderRadius: 8,
+  background: primary ? GREEN : '#FFFFFF', color: primary ? '#FFFFFF' : INK,
+  padding: '15px 18px', cursor: 'pointer', lineHeight: 1.3,
+})
 
 const dateField = {
   border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF',
