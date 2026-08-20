@@ -14,6 +14,7 @@ export const defaultData = () => ({
   contents: {}, // {'수학': {'1': '집합의 뜻', ...}} 과목별 차시 내용
   events: [], // {id, start, end, name, type: '휴업일'|'행사'|'고사'|'개인', period?, cls?}
   cancels: {}, // {'iso|p': {reason}}
+  extras: {}, // {'iso|p': '2-1'} 그 날 그 교시에 실제로 한 수업 — 빈 칸이면 보강, 있던 칸이면 교체
   memos: {}, // 구버전 칸별 메모 — 로드 시 contents로 이관됨
   cfg: {
     examReset: false,

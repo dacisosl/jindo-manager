@@ -80,7 +80,7 @@ function cancelEventFor(data, iso, p, cls) {
 }
 
 // 학기 전체를 훑으며 각 (날짜|교시) 칸의 상태를 계산한다.
-// sessions[iso|p] = {cls, num} | {cls, canceled, reason, user?}
+// sessions[iso|p] = {cls, num, extra?} | {cls, canceled, reason, user?}
 // perClass[cls] = [{iso, p, num}...] (결손 제외, 순서대로)
 export function compute(data) {
   const exam = pickExam(data)
@@ -94,26 +94,28 @@ export function compute(data) {
     if (dow >= 1 && dow <= 5) {
       const iso = toISO(d)
       for (let p = 1; p <= 7; p++) {
-        const cls = data.pattern[dow + '-' + p]
-        if (!cls) continue
         const key = iso + '|' + p
+        // 그 날만의 보강·교체가 있으면 시간표보다 그것이 우선한다
+        const swap = (data.extras || {})[key]
+        const cls = swap || data.pattern[dow + '-' + p]
+        if (!cls) continue
         const ev = cancelEventFor(data, iso, p, cls)
         if (ev) {
-          sessions[key] = { cls, canceled: true, reason: ev.name }
+          sessions[key] = { cls, canceled: true, reason: ev.name, extra: !!swap }
           continue
         }
         const uc = data.cancels[key]
         if (uc) {
           // 수행평가도 차시를 소모하지 않는다 — 다만 결손이 아니라 수행평가로 표시된다
           const perf = uc.kind === 'perf'
-          sessions[key] = { cls, canceled: true, user: true, perf, reason: uc.reason || (perf ? '수행평가' : '결손') }
+          sessions[key] = { cls, canceled: true, user: true, perf, extra: !!swap, reason: uc.reason || (perf ? '수행평가' : '결손') }
           continue
         }
         const sec = data.cfg.examReset && exam && iso > exam.end ? 1 : 0
         const ck = sec + '|' + cls
         counters[ck] = (counters[ck] || 0) + 1
         const num = counters[ck]
-        sessions[key] = { cls, num }
+        sessions[key] = { cls, num, extra: !!swap }
         ;(perClass[cls] = perClass[cls] || []).push({ iso, p, num })
       }
     }
