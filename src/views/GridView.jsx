@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
 import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, RED, TINTS, SECTION_TITLE, CHIP_BTN, CHIP_BTN_OFF, addDays, fromISO, toISO, colorOf, subjectOf, sectionTarget } from '../logic.js'
 import ContentsPanel from './ContentsPanel.jsx'
+import Palette from './Palette.jsx'
 import useWindowWidth from '../useWindowWidth.js'
 import useSplit from '../useSplit.js'
 
@@ -171,7 +172,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
         position: 'fixed', width: W, background: '#FFFFFF', border: '1px solid ' + LINE, borderRadius: 6,
         boxShadow: '0 10px 28px rgba(26,26,26,0.16)', zIndex: 80, textAlign: 'left', cursor: 'default',
         left: Math.max(8, Math.min(pop.x, window.innerWidth - W - 8)),
-        top: Math.min(pop.y + 2, window.innerHeight - 210),
+        top: Math.min(pop.y + 2, window.innerHeight - (pop.mode === 'color' ? 250 : pop.mode === 'pick' ? 220 : 210)),
       }}
     >
       <div style={{ padding: '9px 14px', fontSize: 13, color: SUB, borderBottom: '1px solid ' + LINE_SOFT }}>
@@ -262,21 +263,29 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
       {pop.mode === 'color' && (
         <div style={{ padding: '11px 14px 13px' }}>
           <div style={{ fontSize: 12, color: FAINT, marginBottom: 8 }}>{popCell.cls}</div>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 6 }}>
-            {TINTS.map(t => (
-              <span
-                key={t}
-                onClick={() => {
-                  setData(d => ({ ...d, colors: { ...d.colors, [popCell.cls]: t } }))
-                  setPop(null)
-                }}
-                style={{
-                  width: 24, height: 24, borderRadius: 4, background: t, cursor: 'pointer', boxSizing: 'border-box',
-                  border: colorOf(data, popCell.cls) === t ? '2px solid ' + GREEN : '1px solid rgba(26,26,26,0.14)',
-                }}
-              />
-            ))}
-          </div>
+          <Palette
+            value={colorOf(data, popCell.cls)}
+            onPick={t => {
+              setData(d => ({ ...d, colors: { ...d.colors, [popCell.cls]: t } }))
+              setPop(null)
+            }}
+          />
+          {/* 반에 따로 준 색을 지우면 그 반은 다시 과목 색을 따라간다 */}
+          {data.colors[popCell.cls] && (
+            <div
+              onClick={() => {
+                setData(d => {
+                  const colors = { ...d.colors }
+                  delete colors[popCell.cls]
+                  return { ...d, colors }
+                })
+                setPop(null)
+              }}
+              style={{ ...linkBtn, marginTop: 10, fontSize: 12.5 }}
+            >
+              {subjectOf(data, popCell.cls)} 과목 색 따르기
+            </div>
+          )}
         </div>
       )}
     </div>

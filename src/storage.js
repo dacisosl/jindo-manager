@@ -8,7 +8,8 @@ export const defaultData = () => ({
   semEnd: '',
   classes: [],
   pattern: {}, // {'dow-period': '2-1'}  dow: 1(월)~5(금), period: 1~7
-  colors: {}, // {'2-1': '#D5E7DC'} 반별 색 (없으면 순번 기본색)
+  colors: {}, // {'2-1': '#D5E7DC'} 반별 색 (없으면 과목 색 → 순번 기본색)
+  subjectColors: {}, // {'수학': '#D5E7DC'} 과목 색 — 그 과목 반들이 함께 쓴다
   subjects: ['수학'], // 차시별 내용 과목 탭
   clsSubject: {}, // {'2-1': '수학'} 반→과목 (없으면 첫 과목)
   contents: {}, // {'수학': {'1': '집합의 뜻', ...}} 과목별 차시 내용

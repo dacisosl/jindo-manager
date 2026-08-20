@@ -3,10 +3,15 @@
 
 export const DAYS = '일월화수목금토'
 
-// 반 색상 팔레트 (스와치 선택용 12색, 뮤트 톤)
+// 색상 팔레트 (30색, 뮤트 톤). 검은 글씨가 얹히므로 모두 밝게 잡았다.
+// 앞의 12색은 예전 기본색 순서 그대로 — 색을 따로 고르지 않은 반의 색이 바뀌지 않도록.
+// 이웃한 색끼리 계열이 겹치지 않게 돌려 배치해, 반이 늘어도 서로 구분된다.
 export const TINTS = [
   '#D5E7DC', '#D3DFF2', '#F2E2C4', '#F0D9CF', '#E0D8EF', '#DFEBCB',
   '#F0DBE8', '#CFE8E6', '#EDE1CB', '#D8E3D8', '#E6DCEF', '#EFE6C9',
+  '#C6DFD0', '#C3D4EC', '#F0D9B8', '#EFCBC2', '#D2C9E6', '#CFE0BE',
+  '#EACFE0', '#BFDEDC', '#E3DACB', '#DCE2E6', '#DDD3EA', '#EDE9BE',
+  '#D3E7EE', '#F3DDE4', '#F6E3D2', '#F2DAD6', '#D8E4F5', '#E7E2D8',
 ]
 
 export const GREEN = '#0F5C4D'
@@ -48,9 +53,11 @@ export function md(iso) {
   return d.getMonth() + 1 + '.' + d.getDate()
 }
 
-// 반 색: 사용자가 지정한 색 → 없으면 순번 기본색
+// 반 색: 그 반에 따로 지정한 색 → 그 반이 듣는 과목의 색 → 순번 기본색
 export function colorOf(data, cls) {
   if (data.colors && data.colors[cls]) return data.colors[cls]
+  const sc = data.subjectColors && data.subjectColors[subjectOf(data, cls)]
+  if (sc) return sc
   const i = data.classes.indexOf(cls)
   return i < 0 ? '#FFFFFF' : TINTS[i % TINTS.length]
 }

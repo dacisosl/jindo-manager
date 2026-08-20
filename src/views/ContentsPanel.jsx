@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { GREEN, INK, FAINT, LINE, LINE_SOFT, SUB, SECTION_TITLE, CHIP_BTN, subjectOf } from '../logic.js'
+import Palette from './Palette.jsx'
 import ScheduleCalendar, { CalendarIcon } from './ScheduleCalendar.jsx'
 
 // 차시별 내용: 과목 탭 아래 차시 번호별 입력.
@@ -10,6 +11,7 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
   const [newSubj, setNewSubj] = useState('')
   const [editMode, setEditMode] = useState(false)
   const [drafts, setDrafts] = useState({})
+  const [colorFor, setColorFor] = useState(null) // 색을 고르는 중인 과목
 
   const min = !!data.cfg.minimal
   const calView = data.cfg.contentsView === 'cal'
@@ -49,7 +51,22 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
 
   const openEdit = () => {
     setDrafts(Object.fromEntries(data.subjects.map(s => [s, s])))
+    setColorFor(null)
     setEditMode(true)
+  }
+
+  // 과목 색을 정하면 그 과목 반들이 함께 그 색으로 바뀐다 (반에 따로 준 색이 있으면 그게 우선)
+  const setSubjectColor = (s, t) => {
+    setData(d => ({ ...d, subjectColors: { ...d.subjectColors, [s]: t } }))
+    setColorFor(null)
+  }
+  const clearSubjectColor = s => {
+    setData(d => {
+      const subjectColors = { ...d.subjectColors }
+      delete subjectColors[s]
+      return { ...d, subjectColors }
+    })
+    setColorFor(null)
   }
 
   // 과목 이름을 한꺼번에 고친다. 내용과 반-과목 연결도 새 이름으로 함께 옮긴다.
@@ -67,8 +84,10 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
       Object.entries(d.contents).forEach(([k, v]) => { contents[map[k] || k] = v })
       const clsSubject = {}
       Object.entries(d.clsSubject).forEach(([c, s]) => { clsSubject[c] = map[s] || s })
+      const subjectColors = {}
+      Object.entries(d.subjectColors || {}).forEach(([k, v]) => { subjectColors[map[k] || k] = v })
       setActive(map[subj] || subj)
-      return { ...d, subjects: d.subjects.map(s => map[s]), contents, clsSubject }
+      return { ...d, subjects: d.subjects.map(s => map[s]), contents, clsSubject, subjectColors }
     })
     setEditMode(false)
   }
@@ -81,7 +100,9 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
       delete contents[s]
       const clsSubject = { ...d.clsSubject }
       Object.keys(clsSubject).forEach(c => { if (clsSubject[c] === s) clsSubject[c] = subjects[0] })
-      return { ...d, subjects, contents, clsSubject }
+      const subjectColors = { ...d.subjectColors }
+      delete subjectColors[s]
+      return { ...d, subjects, contents, clsSubject, subjectColors }
     })
     setDrafts(p => {
       const n = { ...p }
@@ -155,6 +176,15 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
     if (editMode) {
       return (
         <span key={s} style={{ display: 'inline-flex', alignItems: 'center', gap: 4, flex: 'none' }}>
+          <button
+            onClick={() => setColorFor(colorFor === s ? null : s)}
+            title="과목 색"
+            style={{
+              width: 18, height: 18, borderRadius: 4, flex: 'none', cursor: 'pointer', padding: 0,
+              background: data.subjectColors[s] || '#FFFFFF',
+              border: colorFor === s ? '2px solid ' + GREEN : '1px solid rgba(26,26,26,0.2)',
+            }}
+          />
           <input
             value={drafts[s] ?? s}
             onChange={e => setDrafts(p => ({ ...p, [s]: e.target.value }))}
@@ -178,8 +208,12 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
           border: 'none', background: 'none', padding: '2px 2px 4px', cursor: 'pointer', fontSize: 14, flex: 'none',
           fontWeight: on ? 700 : 500, color: on ? INK : SUB,
           borderBottom: '2px solid ' + (on ? GREEN : 'transparent'),
+          display: 'flex', alignItems: 'center', gap: 5,
         }}
       >
+        {data.subjectColors[s] && (
+          <span style={{ width: 9, height: 9, borderRadius: 2, background: data.subjectColors[s], border: '1px solid rgba(26,26,26,0.18)', flex: 'none' }} />
+        )}
         {s}
       </button>
     )
@@ -264,6 +298,17 @@ export default function ContentsPanel({ data, setData, computed, today, active, 
           <button onClick={() => setAdding(true)} title="과목 추가" style={{ border: 'none', background: 'none', padding: '0 2px', cursor: 'pointer', fontSize: 16, color: FAINT, flex: 'none', lineHeight: 1 }}>+</button>
         )}
       </div>
+      {editMode && colorFor && (
+        <div style={{ border: '1px solid ' + LINE, borderTop: 'none', background: '#FFFFFF', padding: '10px 12px 12px', flex: 'none' }}>
+          <div style={{ fontSize: 12, color: FAINT, marginBottom: 8 }}>{colorFor} 과목 색</div>
+          <Palette value={data.subjectColors[colorFor] || ''} onPick={t => setSubjectColor(colorFor, t)} />
+          {data.subjectColors[colorFor] && (
+            <div onClick={() => clearSubjectColor(colorFor)} style={{ ...miniBtn, marginTop: 10, fontSize: 12.5, color: GREEN }}>
+              색 지우기
+            </div>
+          )}
+        </div>
+      )}
       {calView ? (
         // 달력뷰: 날짜 밑 동그라미가 그 날의 최소 차시
         <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
