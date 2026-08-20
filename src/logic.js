@@ -95,9 +95,11 @@ export function compute(data) {
       const iso = toISO(d)
       for (let p = 1; p <= 7; p++) {
         const key = iso + '|' + p
-        // 그 날만의 보강·교체가 있으면 시간표보다 그것이 우선한다
-        const swap = (data.extras || {})[key]
-        const cls = swap || data.pattern[dow + '-' + p]
+        // 그 날만의 손질이 있으면 시간표보다 그것이 우선한다.
+        // 값이 반 이름이면 그 수업을 넣고, 빈 문자열이면 그 날은 이 칸을 비운다.
+        const extras = data.extras || {}
+        const swap = Object.prototype.hasOwnProperty.call(extras, key) ? extras[key] : null
+        const cls = swap === null ? data.pattern[dow + '-' + p] : swap
         if (!cls) continue
         const ev = cancelEventFor(data, iso, p, cls)
         if (ev) {

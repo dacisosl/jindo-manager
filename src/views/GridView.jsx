@@ -107,6 +107,16 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
       kind: 'extras', prev: data.extras, prevClasses: data.classes,
     })
   }
+  // 수업을 다른 시간으로 옮긴 날 — 원래 칸은 비운다. 그 반의 뒤 차시가 하나씩 당겨진다.
+  const dropCell = key => {
+    const before = sessions[key]
+    setData(d => ({ ...d, extras: { ...d.extras, [key]: '' } }))
+    setPop(null)
+    setSnack({
+      text: (before ? before.cls + ' ' : '') + '수업을 이 칸에서 뺐습니다.',
+      kind: 'extras', prev: data.extras, prevClasses: data.classes,
+    })
+  }
   const clearExtra = key => {
     setData(d => {
       const next = { ...d.extras }
@@ -180,7 +190,7 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
             </>
           )}
           <div className="hov2" onClick={() => setPop({ ...pop, mode: 'edit' })} style={menuItem(false)}>내용 편집</div>
-          <div className="hov2" onClick={() => setPop({ ...pop, mode: 'pick', draft: '' })} style={menuItem(false)}>수업 교체</div>
+          <div className="hov2" onClick={() => dropCell(pop.key)} style={menuItem(false)}>이 칸 삭제</div>
           <div className="hov2" onClick={() => setPop({ ...pop, mode: 'color' })} style={{ ...menuItem(false), display: 'flex', alignItems: 'center', gap: 8, paddingBottom: 11 }}>
             <span style={{ width: 12, height: 12, borderRadius: 3, background: colorOf(data, popCell.cls), border: '1px solid rgba(26,26,26,0.18)', flex: 'none' }} />
             반 색 바꾸기
@@ -223,6 +233,11 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
               추가
             </button>
           </div>
+          {data.extras[pop.key] === '' && (
+            <div onClick={() => clearExtra(pop.key)} style={{ ...linkBtn, color: WARN, marginTop: 10, fontSize: 12.5 }}>
+              원래 시간표로 되돌리기
+            </div>
+          )}
         </div>
       )}
       {pop.mode === 'edit' && (
