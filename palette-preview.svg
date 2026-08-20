@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="666" height="388" viewBox="0 0 666 388" font-family="Segoe UI, Malgun Gothic, sans-serif">
+<rect width="666" height="388" fill="#FCFCFA"/>
+<text x="129" y="34" text-anchor="middle" font-size="13" font-weight="700" fill="#575757">초록</text>
+<text x="223" y="34" text-anchor="middle" font-size="13" font-weight="700" fill="#575757">청록</text>
+<text x="317" y="34" text-anchor="middle" font-size="13" font-weight="700" fill="#575757">파랑</text>
+<text x="411" y="34" text-anchor="middle" font-size="13" font-weight="700" fill="#575757">보라</text>
+<text x="505" y="34" text-anchor="middle" font-size="13" font-weight="700" fill="#575757">분홍</text>
+<text x="599" y="34" text-anchor="middle" font-size="13" font-weight="700" fill="#575757">노랑</text>
+<text x="72" y="84" text-anchor="end" font-size="12.5" font-weight="700" fill="#575757">추천</text>
+<rect x="86" y="54" width="86" height="52" rx="7" fill="#D5E7DC" stroke="rgba(26,26,26,0.14)"/>
+<text x="96" y="75" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="96" y="92" font-size="9" fill="#575757">#D5E7DC</text>
+<rect x="180" y="54" width="86" height="52" rx="7" fill="#CFE8E6" stroke="rgba(26,26,26,0.14)"/>
+<text x="190" y="75" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="190" y="92" font-size="9" fill="#575757">#CFE8E6</text>
+<rect x="274" y="54" width="86" height="52" rx="7" fill="#D3DFF2" stroke="rgba(26,26,26,0.14)"/>
+<text x="284" y="75" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="284" y="92" font-size="9" fill="#575757">#D3DFF2</text>
+<rect x="368" y="54" width="86" height="52" rx="7" fill="#E0D8EF" stroke="rgba(26,26,26,0.14)"/>
+<text x="378" y="75" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="378" y="92" font-size="9" fill="#575757">#E0D8EF</text>
+<rect x="462" y="54" width="86" height="52" rx="7" fill="#F0DBE8" stroke="rgba(26,26,26,0.14)"/>
+<text x="472" y="75" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="472" y="92" font-size="9" fill="#575757">#F0DBE8</text>
+<rect x="556" y="54" width="86" height="52" rx="7" fill="#F2E2C4" stroke="rgba(26,26,26,0.14)"/>
+<text x="566" y="75" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="566" y="92" font-size="9" fill="#575757">#F2E2C4</text>
+<line x1="16" y1="110" x2="650" y2="110" stroke="#C9C5BE" stroke-dasharray="3 3"/>
+<text x="72" y="144" text-anchor="end" font-size="12.5" font-weight="500" fill="#575757">아주 옅게</text>
+<rect x="86" y="114" width="86" height="52" rx="7" fill="#E0F0E8" stroke="rgba(26,26,26,0.14)"/>
+<text x="96" y="135" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="96" y="152" font-size="9" fill="#575757">#E0F0E8</text>
+<rect x="180" y="114" width="86" height="52" rx="7" fill="#E0EFF0" stroke="rgba(26,26,26,0.14)"/>
+<text x="190" y="135" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="190" y="152" font-size="9" fill="#575757">#E0EFF0</text>
+<rect x="274" y="114" width="86" height="52" rx="7" fill="#E0E8F0" stroke="rgba(26,26,26,0.14)"/>
+<text x="284" y="135" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="284" y="152" font-size="9" fill="#575757">#E0E8F0</text>
+<rect x="368" y="114" width="86" height="52" rx="7" fill="#E6E0F0" stroke="rgba(26,26,26,0.14)"/>
+<text x="378" y="135" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="378" y="152" font-size="9" fill="#575757">#E6E0F0</text>
+<rect x="462" y="114" width="86" height="52" rx="7" fill="#F0E0E5" stroke="rgba(26,26,26,0.14)"/>
+<text x="472" y="135" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="472" y="152" font-size="9" fill="#575757">#F0E0E5</text>
+<rect x="556" y="114" width="86" height="52" rx="7" fill="#F1EADF" stroke="rgba(26,26,26,0.14)"/>
+<text x="566" y="135" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="566" y="152" font-size="9" fill="#575757">#F1EADF</text>
+<text x="72" y="204" text-anchor="end" font-size="12.5" font-weight="500" fill="#575757">옅게</text>
+<rect x="86" y="174" width="86" height="52" rx="7" fill="#CBE7D9" stroke="rgba(26,26,26,0.14)"/>
+<text x="96" y="195" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="96" y="212" font-size="9" fill="#575757">#CBE7D9</text>
+<rect x="180" y="174" width="86" height="52" rx="7" fill="#CBE6E7" stroke="rgba(26,26,26,0.14)"/>
+<text x="190" y="195" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="190" y="212" font-size="9" fill="#575757">#CBE6E7</text>
+<rect x="274" y="174" width="86" height="52" rx="7" fill="#CAD8E7" stroke="rgba(26,26,26,0.14)"/>
+<text x="284" y="195" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="284" y="212" font-size="9" fill="#575757">#CAD8E7</text>
+<rect x="368" y="174" width="86" height="52" rx="7" fill="#D5CAE7" stroke="rgba(26,26,26,0.14)"/>
+<text x="378" y="195" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="378" y="212" font-size="9" fill="#575757">#D5CAE7</text>
+<rect x="462" y="174" width="86" height="52" rx="7" fill="#E7CBD4" stroke="rgba(26,26,26,0.14)"/>
+<text x="472" y="195" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="472" y="212" font-size="9" fill="#575757">#E7CBD4</text>
+<rect x="556" y="174" width="86" height="52" rx="7" fill="#E9DCC8" stroke="rgba(26,26,26,0.14)"/>
+<text x="566" y="195" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="566" y="212" font-size="9" fill="#575757">#E9DCC8</text>
+<text x="72" y="264" text-anchor="end" font-size="12.5" font-weight="500" fill="#575757">보통</text>
+<rect x="86" y="234" width="86" height="52" rx="7" fill="#B2DCC7" stroke="rgba(26,26,26,0.14)"/>
+<text x="96" y="255" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="96" y="272" font-size="9" fill="#575757">#B2DCC7</text>
+<rect x="180" y="234" width="86" height="52" rx="7" fill="#B2DBDC" stroke="rgba(26,26,26,0.14)"/>
+<text x="190" y="255" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="190" y="272" font-size="9" fill="#575757">#B2DBDC</text>
+<rect x="274" y="234" width="86" height="52" rx="7" fill="#B1C5DD" stroke="rgba(26,26,26,0.14)"/>
+<text x="284" y="255" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="284" y="272" font-size="9" fill="#575757">#B1C5DD</text>
+<rect x="368" y="234" width="86" height="52" rx="7" fill="#C1B1DD" stroke="rgba(26,26,26,0.14)"/>
+<text x="378" y="255" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="378" y="272" font-size="9" fill="#575757">#C1B1DD</text>
+<rect x="462" y="234" width="86" height="52" rx="7" fill="#DCB2C0" stroke="rgba(26,26,26,0.14)"/>
+<text x="472" y="255" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="472" y="272" font-size="9" fill="#575757">#DCB2C0</text>
+<rect x="556" y="234" width="86" height="52" rx="7" fill="#E0CCAD" stroke="rgba(26,26,26,0.14)"/>
+<text x="566" y="255" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="566" y="272" font-size="9" fill="#575757">#E0CCAD</text>
+<text x="72" y="324" text-anchor="end" font-size="12.5" font-weight="500" fill="#575757">진하게</text>
+<rect x="86" y="294" width="86" height="52" rx="7" fill="#A1CEB8" stroke="rgba(26,26,26,0.14)"/>
+<text x="96" y="315" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="96" y="332" font-size="9" fill="#575757">#A1CEB8</text>
+<rect x="180" y="294" width="86" height="52" rx="7" fill="#A1CDCE" stroke="rgba(26,26,26,0.14)"/>
+<text x="190" y="315" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="190" y="332" font-size="9" fill="#575757">#A1CDCE</text>
+<rect x="274" y="294" width="86" height="52" rx="7" fill="#A0B6D0" stroke="rgba(26,26,26,0.14)"/>
+<text x="284" y="315" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="284" y="332" font-size="9" fill="#575757">#A0B6D0</text>
+<rect x="368" y="294" width="86" height="52" rx="7" fill="#B1A0D0" stroke="rgba(26,26,26,0.14)"/>
+<text x="378" y="315" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="378" y="332" font-size="9" fill="#575757">#B1A0D0</text>
+<rect x="462" y="294" width="86" height="52" rx="7" fill="#CEA1B0" stroke="rgba(26,26,26,0.14)"/>
+<text x="472" y="315" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="472" y="332" font-size="9" fill="#575757">#CEA1B0</text>
+<rect x="556" y="294" width="86" height="52" rx="7" fill="#D3BD9C" stroke="rgba(26,26,26,0.14)"/>
+<text x="566" y="315" font-size="11" font-weight="700" fill="#1A1A1A">2-1</text>
+<text x="566" y="332" font-size="9" fill="#575757">#D3BD9C</text>
+<text x="16" y="376" font-size="11.5" fill="#8F8B86">추천 6색 · 색상 6계열 × 채도 4단계 = 30색</text>
+</svg>

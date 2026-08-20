@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, RED, TINTS, SECTION_TITLE, CHIP_BTN, CHIP_BTN_OFF, addDays, fromISO, toISO, colorOf, subjectOf, sectionTarget } from '../logic.js'
+import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, RED, SECTION_TITLE, CHIP_BTN, CHIP_BTN_OFF, addDays, fromISO, toISO, colorOf, subjectOf, sectionTarget } from '../logic.js'
 import ContentsPanel from './ContentsPanel.jsx'
 import Palette from './Palette.jsx'
 import useWindowWidth from '../useWindowWidth.js'

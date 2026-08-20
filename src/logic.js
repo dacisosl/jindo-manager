@@ -3,15 +3,22 @@
 
 export const DAYS = '일월화수목금토'
 
-// 색상 팔레트 (30색, 뮤트 톤). 검은 글씨가 얹히므로 모두 밝게 잡았다.
-// 앞의 12색은 예전 기본색 순서 그대로 — 색을 따로 고르지 않은 반의 색이 바뀌지 않도록.
-// 이웃한 색끼리 계열이 겹치지 않게 돌려 배치해, 반이 늘어도 서로 구분된다.
+// 색 팔레트 (30색). 검은 글씨가 얹힐 자리이므로 명도를 72% 아래로 내리지 않았다.
+// 첫 줄은 서로 가장 잘 어울리는 추천 6색, 그 아래는 같은 6계열을 채도 4단계로 나눈 것.
+// 6열 격자로 그리면 세로가 색상 계열, 가로가 밝기가 된다.
 export const TINTS = [
+  '#D5E7DC', '#CFE8E6', '#D3DFF2', '#E0D8EF', '#F0DBE8', '#F2E2C4', // 추천
+  '#E0F0E8', '#E0EFF0', '#E0E8F0', '#E6E0F0', '#F0E0E5', '#F1EADF', // 아주 엷게
+  '#CBE7D9', '#CBE6E7', '#CAD8E7', '#D5CAE7', '#E7CBD4', '#E9DCC8', // 엷게
+  '#B2DCC7', '#B2DBDC', '#B1C5DD', '#C1B1DD', '#DCB2C0', '#E0CCAD', // 보통
+  '#A1CEB8', '#A1CDCE', '#A0B6D0', '#B1A0D0', '#CEA1B0', '#D3BD9C', // 진하게
+]
+
+// 색을 고르지 않은 반에 순서대로 붙는 기본색 — 예전과 같게 두어 쓰던 색이 바뀌지 않는다.
+// 이웃한 반끼리 계열이 겹치지 않도록 돌려 놓았다.
+export const DEFAULT_TINTS = [
   '#D5E7DC', '#D3DFF2', '#F2E2C4', '#F0D9CF', '#E0D8EF', '#DFEBCB',
   '#F0DBE8', '#CFE8E6', '#EDE1CB', '#D8E3D8', '#E6DCEF', '#EFE6C9',
-  '#C6DFD0', '#C3D4EC', '#F0D9B8', '#EFCBC2', '#D2C9E6', '#CFE0BE',
-  '#EACFE0', '#BFDEDC', '#E3DACB', '#DCE2E6', '#DDD3EA', '#EDE9BE',
-  '#D3E7EE', '#F3DDE4', '#F6E3D2', '#F2DAD6', '#D8E4F5', '#E7E2D8',
 ]
 
 export const GREEN = '#0F5C4D'
@@ -59,7 +66,7 @@ export function colorOf(data, cls) {
   const sc = data.subjectColors && data.subjectColors[subjectOf(data, cls)]
   if (sc) return sc
   const i = data.classes.indexOf(cls)
-  return i < 0 ? '#FFFFFF' : TINTS[i % TINTS.length]
+  return i < 0 ? '#FFFFFF' : DEFAULT_TINTS[i % DEFAULT_TINTS.length]
 }
 
 // 반의 과목: 지정 없으면 첫 과목

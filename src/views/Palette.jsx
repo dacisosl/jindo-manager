@@ -1,21 +1,31 @@
 import React from 'react'
-import { GREEN, TINTS } from '../logic.js'
+import { GREEN, LINE_SOFT, FAINT, TINTS } from '../logic.js'
 
 // 30색 팔레트 — 반 색과 과목 색이 같은 판을 쓴다.
+// 첫 줄은 추천 6색, 그 아래는 같은 색상 계열을 채도별로 나눈 네 줄.
+const REC = 6
+
 export default function Palette({ value, onPick, size = 20 }) {
+  const swatch = t => (
+    <span
+      key={t}
+      onClick={() => onPick(t)}
+      title={t}
+      style={{
+        height: size, borderRadius: 4, background: t, cursor: 'pointer', boxSizing: 'border-box',
+        border: value === t ? '2px solid ' + GREEN : '1px solid rgba(26,26,26,0.14)',
+      }}
+    />
+  )
+  const grid = { display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 5 }
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6,1fr)', gap: 5 }}>
-      {TINTS.map(t => (
-        <span
-          key={t}
-          onClick={() => onPick(t)}
-          title={t}
-          style={{
-            height: size, borderRadius: 4, background: t, cursor: 'pointer', boxSizing: 'border-box',
-            border: value === t ? '2px solid ' + GREEN : '1px solid rgba(26,26,26,0.14)',
-          }}
-        />
-      ))}
-    </div>
+    <>
+      <div style={grid}>{TINTS.slice(0, REC).map(swatch)}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, margin: '9px 0 8px' }}>
+        <span style={{ fontSize: 10.5, color: FAINT, flex: 'none' }}>채도</span>
+        <span style={{ flex: 1, height: 1, background: LINE_SOFT }} />
+      </div>
+      <div style={{ ...grid, rowGap: 5 }}>{TINTS.slice(REC).map(swatch)}</div>
+    </>
   )
 }
