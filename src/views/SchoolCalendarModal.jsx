@@ -23,7 +23,6 @@ export default function SchoolCalendarModal({ data, setData, setSnack, onClose }
   const [grade, setGrade] = useState(0) // 0 = 전학년
   const [picked, setPicked] = useState(() => new Set())
   const [types, setTypes] = useState({}) // 사용자가 바꾼 유형 {i: 0|1|2}
-  const [hasPreset, setHasPreset] = useState(false) // 휴업일·고사가 있어 미리 골라 준 학교인지
   const seq = useRef(0) // 늦게 온 검색 결과가 최신 입력을 덮지 않게
 
   // 나이스가 안 될 때 내장 데이터로 내려앉는다 — 같은 질의를 이어서 처리한다
@@ -95,13 +94,13 @@ export default function SchoolCalendarModal({ data, setData, setSnack, onClose }
         evs = await loadSchoolEvents(s.region, s.key)
       }
       setEvents(evs)
-      // 처음 고름: 수업이 빠지는 휴업일·고사 중, 학기 안에 있고 아직 없는 것
+      // 기본은 모두 고른 상태 — 빼는 편이 고르는 것보다 빠르다.
+      // 이미 넣어 둔 일정만 빼 둔다. 그대로 넣으면 같은 일정이 두 번 들어가기 때문.
       const init = new Set()
       evs.forEach((ev, i) => {
-        if (ev.type !== 0 && inSem(ev.date) && !already(ev.date, ev.name)) init.add(i)
+        if (!already(ev.date, ev.name)) init.add(i)
       })
       setPicked(init)
-      setHasPreset(init.size > 0)
     } catch {
       setEvents([])
       setError('일정을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.')
@@ -252,11 +251,8 @@ export default function SchoolCalendarModal({ data, setData, setSnack, onClose }
               </div>
 
               <div style={{ marginTop: 10, fontSize: 12, color: FAINT, lineHeight: 1.6 }}>
-                넣은 일정은 그 날 수업을 결손 처리합니다.{' '}
-                {hasPreset
-                  ? '그래서 휴업일·고사만 미리 골라 두었습니다 — 수업이 실제로 빠지는 행사만 더 고르세요.'
-                  : '이 학교는 이 기간에 휴업일·고사가 없어 미리 고른 것이 없습니다 — 수업이 실제로 빠지는 행사만 골라주세요.'}
-                {' '}유형 배지를 누르면 행사·휴업일·고사로 바꿀 수 있습니다.
+                넣은 일정은 그 날 수업을 결손 처리합니다. 모두 골라 두었으니
+                수업을 하는 행사는 빼주세요. 유형 배지를 누르면 행사·휴업일·고사로 바꿀 수 있습니다.
               </div>
 
               <div className="soft-scroll" style={{ marginTop: 8, maxHeight: 340, overflowY: 'auto', borderTop: '1px solid ' + LINE }}>
