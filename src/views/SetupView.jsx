@@ -10,7 +10,7 @@ import useSplit from '../useSplit.js'
 
 // 최초 설정 = 진도표 화면과 같은 골격(윗줄 + 시간표 + 오른쪽 패널).
 // 윗줄만 대시보드 대신 학기 기간이고, 오른쪽 패널은 차시별 내용 대신 일정이다.
-export default function SetupView({ data, patch, setData, computed, setSnack, goImport, openSchools, onStart, fit, tourTick }) {
+export default function SetupView({ data, patch, setData, computed, setSnack, goImport, openSchools, onStart, fit, tourTick, holdTour }) {
   const { isMobile } = useWindowWidth()
   const { wrapRef, splitPct, dragging, startDrag } = useSplit(data, setData)
   const [mtab, setMtab] = useState('grid') // 모바일 탭: grid | sched
@@ -44,12 +44,13 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
     tour.start()
   }
 
+  // 안내 투어는 모달이 떠 있는 동안 기다린다 — 학사일정 안내·학교 검색이 먼저다
   useEffect(() => {
-    if (!data.introSeen) {
+    if (!data.introSeen && !holdTour) {
       const t = setTimeout(startTour, 400)
       return () => clearTimeout(t)
     }
-  }, [])
+  }, [holdTour])
 
   // 상단 바의 안내 버튼
   useEffect(() => {

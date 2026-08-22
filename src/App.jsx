@@ -6,6 +6,7 @@ import ImportView from './views/ImportView.jsx'
 import SettingsModal from './views/SettingsModal.jsx'
 import HamilModal from './views/HamilModal.jsx'
 import SchoolCalendarModal from './views/SchoolCalendarModal.jsx'
+import ScheduleGuideModal from './views/ScheduleGuideModal.jsx'
 import SetupView from './views/SetupView.jsx'
 import Snackbar from './views/Snackbar.jsx'
 import useWindowWidth from './useWindowWidth.js'
@@ -26,6 +27,11 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [hamilOpen, setHamilOpen] = useState(false)
   const [schoolOpen, setSchoolOpen] = useState(false)
+  // 처음 시작할 때 학사일정 넣는 길을 먼저 안내한다.
+  // 이미 일정이 있거나 한 번 본 뒤라면 뜨지 않는다.
+  const [schedGuideOpen, setSchedGuideOpen] = useState(
+    () => !data.setupDone && !data.schedIntroSeen && !data.events.length
+  )
   const [tourTick, setTourTick] = useState(0) // 상단 바의 안내 버튼 → 설정 화면 투어 시작
   const [printing, setPrinting] = useState(false)
 
@@ -62,6 +68,12 @@ export default function App() {
   }
 
   const openSchools = () => setSchoolOpen(true)
+
+  // 안내는 한 번이면 된다 — 닫든 검색으로 넘어가든 다시 뜨지 않게 표시해 둔다
+  const closeSchedGuide = () => {
+    setSchedGuideOpen(false)
+    setData(d => ({ ...d, schedIntroSeen: true }))
+  }
 
   const ctx = { data, patch, setData, computed, today, snack, setSnack, go, goImport, openSchools, weekOffset, setWeekOffset, stagger }
 
@@ -189,7 +201,9 @@ export default function App() {
       <div style={{ flex: fit ? 1 : undefined, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: fit ? 'auto' : undefined }}>
         {view === 'grid' && <GridView {...ctx} fit={fit} />}
         {view === 'import' && <ImportView {...ctx} kind={importKind} />}
-        {view === 'setup' && <SetupView {...ctx} fit={fit} tourTick={tourTick} onStart={finishSetup} />}
+        {view === 'setup' && (
+          <SetupView {...ctx} fit={fit} tourTick={tourTick} onStart={finishSetup} holdTour={schedGuideOpen || schoolOpen} />
+        )}
       </div>
 
       {settingsOpen && (
@@ -203,6 +217,12 @@ export default function App() {
           onResetSetup={() => go('setup')}
           onImport={goImport}
           onSchools={() => { setSettingsOpen(false); openSchools() }}
+        />
+      )}
+      {schedGuideOpen && (
+        <ScheduleGuideModal
+          onSearch={() => { closeSchedGuide(); openSchools() }}
+          onClose={closeSchedGuide}
         />
       )}
       {schoolOpen && (
