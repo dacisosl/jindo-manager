@@ -35,6 +35,7 @@ export const defaultData = () => ({
     contentsView: 'list', // 차시별 내용: list | cal
   },
   introSeen: false,
+  schedIntroSeen: false, // 학사일정 검색 안내 모달 — 처음 한 번만 뜬다
 })
 
 // 저장본에 없는 필드는 기본값으로 채운다 — 예전 버전 파일도 그대로 열린다.
