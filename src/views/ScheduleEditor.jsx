@@ -6,7 +6,7 @@ const TYPES = ['휴업일', '행사', '고사', '개인']
 
 // 일정 등록 폼 + 목록. 최초 설정 화면과 일정 화면이 함께 쓴다.
 // 기간은 시작일~종료일 두 칸(같으면 하루), "+ 기간"으로 띄엄띄엄 여러 구간을 한 번에 넣는다.
-export default function ScheduleEditor({ data, setData, computed, setSnack, maxHeight, onImport, onToggleView, actions, fill = false }) {
+export default function ScheduleEditor({ data, setData, computed, setSnack, maxHeight, onImport, onSchools, onToggleView, actions, fill = false }) {
   const min = !!data.cfg.minimal
   const todayISO = toISO(new Date())
   const initDate = data.semStart && todayISO < data.semStart ? data.semStart : todayISO
@@ -135,6 +135,14 @@ export default function ScheduleEditor({ data, setData, computed, setSnack, maxH
           {onToggleView && (
             <button onClick={onToggleView} title="달력으로 보기" className="hov" style={iconBtnS}>
               <CalendarIcon />
+            </button>
+          )}
+          {onSchools && (
+            <button onClick={onSchools} title="학교 이름으로 학사일정 검색" className="hov" style={iconBtnS}>
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="11" cy="11" r="7" />
+                <line x1="16.5" y1="16.5" x2="21" y2="21" />
+              </svg>
             </button>
           )}
           {onImport && (

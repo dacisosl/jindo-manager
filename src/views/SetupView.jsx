@@ -10,7 +10,7 @@ import useSplit from '../useSplit.js'
 
 // 최초 설정 = 진도표 화면과 같은 골격(윗줄 + 시간표 + 오른쪽 패널).
 // 윗줄만 대시보드 대신 학기 기간이고, 오른쪽 패널은 차시별 내용 대신 일정이다.
-export default function SetupView({ data, patch, setData, computed, setSnack, goImport, onStart, fit, tourTick }) {
+export default function SetupView({ data, patch, setData, computed, setSnack, goImport, openSchools, onStart, fit, tourTick }) {
   const { isMobile } = useWindowWidth()
   const { wrapRef, splitPct, dragging, startDrag } = useSplit(data, setData)
   const [mtab, setMtab] = useState('grid') // 모바일 탭: grid | sched
@@ -28,7 +28,7 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
           { title: '학기 기간', element: '[data-intro-sem]', intro: '학기 시작일과 종료일을 정합니다. 이 기간의 평일에 차시가 계산됩니다.' },
           { title: '칸 선택', element: '[data-intro-grid]', intro: '수업이 있는 칸을 눌러 고릅니다. 한 반의 수업 시간을 모두 고르세요.' },
           { title: '반 등록', element: '[data-intro-register]', intro: '고른 칸을 반으로 등록합니다. 반 이름과 과목을 넣으면 색이 자동으로 부여됩니다.' },
-          { title: '일정', element: '[data-intro-sched]', intro: '휴업일·행사·고사·출장을 넣으면 그 날 수업이 빠지고 뒤 차시가 밀립니다.' },
+          { title: '일정', element: '[data-intro-sched]', intro: '휴업일·행사·고사·출장을 넣으면 그 날 수업이 빠지고 뒤 차시가 밀립니다. [학교검색]을 누르면 우리 학교 학사일정을 그대로 가져올 수 있습니다.' },
           { title: '학교 시간표', element: '[data-intro-hamil]', intro: '해밀고 교사라면 이 마크를 눌러 이름 검색으로 시간표를 바로 불러올 수 있습니다.' },
           { title: '시작', element: '[data-intro-start]', intro: '다 채웠으면 이 버튼을 누릅니다. 진도표가 바로 만들어집니다.' },
         ],
@@ -108,6 +108,11 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
         <ListIcon />
         일정뷰
       </button>
+      {/* 학교 이름으로 나이스 학사일정을 그대로 가져온다 — 하나씩 넣는 수고를 덜어준다 */}
+      <button onClick={openSchools} title="학교 이름으로 학사일정 검색" style={{ ...CHIP_BTN_OFF, padding: '7px 12px' }}>
+        <SearchIcon />
+        학교검색
+      </button>
     </div>
   )
 
@@ -127,6 +132,11 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
         </span>
         <span style={{ fontSize: 12.5, fontWeight: 500, color: FAINT }}>이름·기간·유형을 하나씩 입력</span>
       </button>
+      {/* 우리 학교 학사일정이 이미 나이스에 있다면 손으로 넣을 것도 없다 */}
+      <button onClick={openSchools} style={{ ...linkish, marginTop: 2 }}>
+        <SearchIcon />
+        학교 이름으로 학사일정 찾기
+      </button>
     </div>
   )
 
@@ -136,7 +146,7 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
         <ScheduleCalendar data={data} setData={setData} setSnack={setSnack} actions={regButtons} paintable />
       ) : (
         <div style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', padding: '0 12px 10px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
-          <ScheduleEditor data={data} setData={setData} computed={computed} setSnack={setSnack} onImport={() => goImport('schedule')} actions={regButtons} fill />
+          <ScheduleEditor data={data} setData={setData} computed={computed} setSnack={setSnack} onImport={() => goImport('schedule')} onSchools={openSchools} actions={regButtons} fill />
         </div>
       )}
     </div>
@@ -189,6 +199,20 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
         </div>
       </div>
     </div>
+  )
+}
+
+const linkish = {
+  display: 'flex', alignItems: 'center', gap: 6, border: 'none', background: 'none',
+  padding: '4px 6px', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: GREEN,
+}
+
+function SearchIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="11" cy="11" r="7" />
+      <line x1="16.5" y1="16.5" x2="21" y2="21" />
+    </svg>
   )
 }
 

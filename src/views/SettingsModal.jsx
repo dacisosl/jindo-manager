@@ -4,7 +4,7 @@ import { getApiKey, setApiKey, getModel, setModel, exportJSON, importJSON, defau
 import { checkKey } from '../importer.js'
 import Modal from './Modal.jsx'
 
-export default function SettingsModal({ data, setData, computed, today, setSnack, onClose, onResetSetup, onImport }) {
+export default function SettingsModal({ data, setData, computed, today, setSnack, onClose, onResetSetup, onImport, onSchools }) {
   const [confirmClear, setConfirmClear] = useState(false)
   const cfg = data.cfg
   const [open, setOpen] = useState({ mode: true, sem: true, count: true, view: false, dash: false, print: false, data: false, file: false })
@@ -210,6 +210,7 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
             {dataError && <div style={{ fontSize: 13, color: WARN }}>{dataError}</div>}
             <div style={{ fontSize: 12, color: FAINT }}>불러오면 현재 데이터를 대체합니다. API 키는 파일에 담기지 않습니다.</div>
             <button onClick={() => exportCSV(computed.sessions)} style={{ ...linkBtn, marginTop: 6 }}>진도 데이터 내보내기 (.csv)</button>
+            {onSchools && <button onClick={onSchools} style={linkBtn}>학교 이름으로 학사일정 가져오기</button>}
             <button onClick={() => { onClose(); onResetSetup() }} style={linkBtn}>최초 설정 다시 하기</button>
             <button onClick={() => setConfirmClear(true)} style={{ ...linkBtn, color: RED, fontWeight: 700, marginTop: 4 }}>전체 내용 초기화</button>
             <input ref={jsonRef} type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={e => loadFile(e.target.files[0])} />
