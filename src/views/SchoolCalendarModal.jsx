@@ -1,36 +1,73 @@
-import React, { useEffect, useMemo, useState } from 'react'
-import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, fromISO } from '../logic.js'
-import { EVENT_TYPES, loadSchoolIndex, loadSchoolEvents, searchSchools, toAppEvents } from '../schools.js'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
+import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, fromISO, toISO } from '../logic.js'
+import {
+  EVENT_TYPES, loadSchoolIndex, loadSchoolEvents, searchSchools, toAppEvents,
+  neisSearchSchools, neisSchedule, schoolYearRange,
+} from '../schools.js'
 import Modal from './Modal.jsx'
 
 // 전국 학사일정 검색 — 학교를 찾아 그 학교 일정을 골라 넣는다.
+// 나이스 오픈API를 실시간으로 조회하고, 나이스가 응답하지 않으면 내장 데이터로 전환한다.
 // 이 앱에서는 일정이 곧 결손이므로, 수업이 실제로 빠지는 휴업일·고사만 처음부터 골라 둔다.
 // 행사는 학교마다 수업을 하기도 해서 사용자가 직접 고른다.
 export default function SchoolCalendarModal({ data, setData, setSnack, onClose }) {
-  const [index, setIndex] = useState(null)
+  const [mode, setMode] = useState('neis') // neis | local (나이스 실패 시 내장 데이터)
+  const [index, setIndex] = useState(null) // 내장 데이터 목록 — local 모드에서만 쓴다
   const [error, setError] = useState('')
   const [q, setQ] = useState('')
   const [level, setLevel] = useState(null)
+  const [results, setResults] = useState([])
+  const [searching, setSearching] = useState(false)
   const [school, setSchool] = useState(null)
   const [events, setEvents] = useState(null) // null = 불러오는 중
   const [grade, setGrade] = useState(0) // 0 = 전학년
   const [picked, setPicked] = useState(() => new Set())
   const [types, setTypes] = useState({}) // 사용자가 바꾼 유형 {i: 0|1|2}
   const [hasPreset, setHasPreset] = useState(false) // 휴업일·고사가 있어 미리 골라 준 학교인지
+  const seq = useRef(0) // 늦게 온 검색 결과가 최신 입력을 덮지 않게
 
+  // 나이스가 안 될 때 내장 데이터로 내려앉는다 — 같은 질의를 이어서 처리한다
+  const fallbackToLocal = async (query, my) => {
+    try {
+      const idx = index || (await loadSchoolIndex())
+      if (!index) setIndex(idx)
+      setMode('local')
+      if (my !== seq.current) return
+      setResults(searchSchools(idx.schools, query, { level }))
+      setError('나이스에 연결하지 못해 내장 데이터로 검색합니다.')
+    } catch {
+      if (my === seq.current) setError('나이스에 연결하지 못했고 내장 데이터도 읽지 못했습니다. 잠시 후 다시 시도해주세요.')
+    }
+  }
+
+  // 입력을 잠깐 기다렸다가 검색한다. 나이스는 두 글자부터 (한 글자는 결과가 수백 개라 의미가 없다)
   useEffect(() => {
-    let alive = true
-    loadSchoolIndex().then(
-      idx => alive && setIndex(idx),
-      () => alive && setError('학교 목록을 불러오지 못했습니다. 새로고침 후 다시 시도해주세요.')
-    )
-    return () => { alive = false }
-  }, [])
-
-  const results = useMemo(
-    () => (index ? searchSchools(index.schools, q, { level }) : []),
-    [index, q, level]
-  )
+    const query = q.trim()
+    const my = ++seq.current
+    if (!query || (mode === 'neis' && query.length < 2)) {
+      setResults([])
+      setSearching(false)
+      return
+    }
+    if (mode === 'local') {
+      if (index) setResults(searchSchools(index.schools, query, { level }))
+      return
+    }
+    setSearching(true)
+    const t = setTimeout(async () => {
+      try {
+        const list = await neisSearchSchools(query)
+        if (my !== seq.current) return
+        setResults(level == null ? list : list.filter(s => s.level === level))
+        setError('')
+      } catch {
+        await fallbackToLocal(query, my)
+      } finally {
+        if (my === seq.current) setSearching(false)
+      }
+    }, 350)
+    return () => clearTimeout(t)
+  }, [q, level, mode, index])
 
   const semStart = data.semStart
   const semEnd = data.semEnd
@@ -49,7 +86,14 @@ export default function SchoolCalendarModal({ data, setData, setSnack, onClose }
     setTypes({})
     setGrade(0)
     try {
-      const evs = await loadSchoolEvents(s.region, s.key)
+      let evs
+      if (s.src === 'neis') {
+        // 학기가 걸친 학년도 전체를 받아 온다 — 학기 밖 일정도 흐리게나마 보이도록
+        const { from, to } = schoolYearRange(hasSem ? semStart : toISO(new Date()))
+        evs = await neisSchedule(s, from, to)
+      } else {
+        evs = await loadSchoolEvents(s.region, s.key)
+      }
       setEvents(evs)
       // 처음 고름: 수업이 빠지는 휴업일·고사 중, 학기 안에 있고 아직 없는 것
       const init = new Set()
@@ -60,7 +104,7 @@ export default function SchoolCalendarModal({ data, setData, setSnack, onClose }
       setHasPreset(init.size > 0)
     } catch {
       setEvents([])
-      setError('일정을 불러오지 못했습니다.')
+      setError('일정을 불러오지 못했습니다. 잠시 후 다시 시도해주세요.')
     }
   }
 
@@ -110,7 +154,11 @@ export default function SchoolCalendarModal({ data, setData, setSnack, onClose }
     onClose()
   }
 
-  const period = index ? index.meta.start.replace(/-/g, '.') + ' ~ ' + index.meta.end.replace(/-/g, '.') : ''
+  // 화면에 보여줄 조회 기간 — 나이스는 학년도 전체, 내장 데이터는 담긴 범위
+  const yr = schoolYearRange(hasSem ? semStart : toISO(new Date()))
+  const period = mode === 'neis'
+    ? yr.from.replace(/-/g, '.') + ' ~ ' + yr.to.replace(/-/g, '.')
+    : index ? index.meta.start.replace(/-/g, '.') + ' ~ ' + index.meta.end.replace(/-/g, '.') : ''
 
   return (
     <Modal title="학사일정 검색" onClose={onClose} width={640}>
@@ -124,9 +172,8 @@ export default function SchoolCalendarModal({ data, setData, setSnack, onClose }
             <input
               value={q}
               onChange={e => setQ(e.target.value)}
-              placeholder={index ? '학교 이름 (초성도 됩니다)' : '학교 목록을 불러오는 중…'}
+              placeholder={mode === 'neis' ? '학교 이름 (두 글자 이상)' : '학교 이름 (초성도 됩니다)'}
               autoFocus
-              disabled={!index}
               style={{ flex: 1, minWidth: 0, border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', fontSize: 14, padding: '8px 10px' }}
             />
           </div>
@@ -140,7 +187,8 @@ export default function SchoolCalendarModal({ data, setData, setSnack, onClose }
           {error && <div style={{ marginTop: 14, fontSize: 13, color: WARN }}>{error}</div>}
 
           <div className="soft-scroll" style={{ marginTop: 14, maxHeight: 320, overflowY: 'auto' }}>
-            {q.trim() && !results.length && index && (
+            {searching && <div style={{ fontSize: 13, color: FAINT, padding: '10px 0' }}>찾는 중…</div>}
+            {!searching && q.trim().length >= 2 && !results.length && !error && (
               <div style={{ fontSize: 13, color: FAINT, padding: '10px 0' }}>찾는 학교가 없습니다. 이름을 줄여서 검색해보세요.</div>
             )}
             {results.map(s => (
@@ -162,11 +210,13 @@ export default function SchoolCalendarModal({ data, setData, setSnack, onClose }
             ))}
           </div>
 
-          {index && (
-            <div style={{ marginTop: 14, fontSize: 12, color: FAINT, lineHeight: 1.6 }}>
-              담긴 기간은 {period} 입니다. 학교 {index.schools.length.toLocaleString()}곳.
-            </div>
-          )}
+          <div style={{ marginTop: 14, fontSize: 12, color: FAINT, lineHeight: 1.6 }}>
+            {mode === 'neis'
+              ? '나이스(교육행정정보시스템)에 등록된 학사일정을 실시간으로 조회합니다. 조회 기간 ' + period + '.'
+              : index
+                ? '내장 데이터로 검색 중입니다. 담긴 기간은 ' + period + ' · 학교 ' + index.schools.length.toLocaleString() + '곳.'
+                : ''}
+          </div>
         </>
       ) : (
         <>
@@ -180,8 +230,8 @@ export default function SchoolCalendarModal({ data, setData, setSnack, onClose }
           {events === null && <div style={{ marginTop: 18, fontSize: 13, color: SUB }}>일정을 불러오는 중…</div>}
 
           {events && !events.length && (
-            <div style={{ marginTop: 18, fontSize: 13, color: SUB }}>
-              이 학교는 {period} 사이에 등록된 평일 일정이 없습니다.
+            <div style={{ marginTop: 18, fontSize: 13, color: error ? WARN : SUB }}>
+              {error || '이 학교는 ' + period + ' 사이에 등록된 평일 일정이 없습니다.'}
             </div>
           )}
 
