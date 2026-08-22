@@ -136,11 +136,11 @@ export default function SchoolCalendarModal({ data, setData, setSnack, onClose }
   const outOfSem = rows.filter(({ ev }) => !inSem(ev.date)).length
   const pickedRows = rows.filter(({ i }) => picked.has(i))
 
+  // 보이는 행을 모두 고르거나 모두 푼다 — 학기 밖도 고른 대로 따른다.
+  // (학기 밖은 넣어도 차시 계산에 쓰이지 않는다는 것을 아래 줄에서 알려준다)
   const setAll = on => setPicked(p => {
     const n = new Set(p)
-    rows.forEach(({ i, ev }) => {
-      if (on) { if (inSem(ev.date)) n.add(i) } else n.delete(i)
-    })
+    rows.forEach(({ i }) => (on ? n.add(i) : n.delete(i)))
     return n
   })
 
@@ -266,14 +266,16 @@ export default function SchoolCalendarModal({ data, setData, setSnack, onClose }
                   const d = fromISO(ev.date)
                   const on = picked.has(i)
                   return (
-                    <div
+                    // 줄 전체가 체크 대상이다 — 손가락으로 15px 네모를 겨냥하지 않아도 되도록
+                    <label
                       key={i}
                       style={{
-                        display: 'grid', gridTemplateColumns: '18px 78px 1fr auto', gap: 8, alignItems: 'center',
-                        padding: '9px 2px', borderBottom: '1px solid ' + LINE_SOFT, opacity: out ? 0.45 : 1,
+                        display: 'grid', gridTemplateColumns: '20px 78px 1fr auto', gap: 8, alignItems: 'center',
+                        padding: '11px 2px', borderBottom: '1px solid ' + LINE_SOFT, opacity: out ? 0.55 : 1,
+                        cursor: 'pointer', WebkitTapHighlightColor: 'transparent',
                       }}
                     >
-                      <input type="checkbox" checked={on} onChange={() => toggle(i)} style={{ accentColor: GREEN, width: 15, height: 15, margin: 0, cursor: 'pointer' }} />
+                      <input type="checkbox" checked={on} onChange={() => toggle(i)} style={{ accentColor: GREEN, width: 17, height: 17, margin: 0, cursor: 'pointer' }} />
                       <div style={{ fontSize: 12.5, color: SUB }}>
                         {d.getMonth() + 1}.{d.getDate()} {DAYS[d.getDay()]}
                       </div>
@@ -287,10 +289,15 @@ export default function SchoolCalendarModal({ data, setData, setSnack, onClose }
                           <div style={{ fontSize: 11.5, color: FAINT, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{ev.detail}</div>
                         )}
                       </div>
-                      <button onClick={() => cycleType(i)} title="유형 바꾸기" style={badge(typeOf(i))}>
+                      {/* 배지는 줄 안에 있지만 체크가 아니라 유형 바꾸기다 — 라벨 동작을 막는다 */}
+                      <button
+                        onClick={e => { e.preventDefault(); e.stopPropagation(); cycleType(i) }}
+                        title="유형 바꾸기"
+                        style={badge(typeOf(i))}
+                      >
                         {EVENT_TYPES[typeOf(i)]}
                       </button>
-                    </div>
+                    </label>
                   )
                 })}
               </div>
