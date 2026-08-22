@@ -5,6 +5,7 @@ import GridView from './views/GridView.jsx'
 import ImportView from './views/ImportView.jsx'
 import SettingsModal from './views/SettingsModal.jsx'
 import HamilModal from './views/HamilModal.jsx'
+import SchoolCalendarModal from './views/SchoolCalendarModal.jsx'
 import SetupView from './views/SetupView.jsx'
 import Snackbar from './views/Snackbar.jsx'
 import useWindowWidth from './useWindowWidth.js'
@@ -24,6 +25,7 @@ export default function App() {
   const [stagger, setStagger] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [hamilOpen, setHamilOpen] = useState(false)
+  const [schoolOpen, setSchoolOpen] = useState(false)
   const [tourTick, setTourTick] = useState(0) // 상단 바의 안내 버튼 → 설정 화면 투어 시작
   const [printing, setPrinting] = useState(false)
 
@@ -59,7 +61,9 @@ export default function App() {
     setView('import')
   }
 
-  const ctx = { data, patch, setData, computed, today, snack, setSnack, go, goImport, weekOffset, setWeekOffset, stagger }
+  const openSchools = () => setSchoolOpen(true)
+
+  const ctx = { data, patch, setData, computed, today, snack, setSnack, go, goImport, openSchools, weekOffset, setWeekOffset, stagger }
 
   const setupReady = d => !!(d.semStart && d.semEnd && d.semStart < d.semEnd && Object.keys(d.pattern).length)
 
@@ -198,6 +202,15 @@ export default function App() {
           onClose={() => setSettingsOpen(false)}
           onResetSetup={() => go('setup')}
           onImport={goImport}
+          onSchools={() => { setSettingsOpen(false); openSchools() }}
+        />
+      )}
+      {schoolOpen && (
+        <SchoolCalendarModal
+          data={data}
+          setData={setData}
+          setSnack={setSnack}
+          onClose={() => setSchoolOpen(false)}
         />
       )}
       {hamilOpen && (
