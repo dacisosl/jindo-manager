@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react'
-import { GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, SECTION_TITLE } from '../logic.js'
+import { GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, toISO } from '../logic.js'
+import { guessSemester } from '../schools.js'
 import Modal from './Modal.jsx'
 
 // 학사일정을 넣은 직후 이어지는 두 단계 안내.
@@ -8,10 +9,20 @@ import Modal from './Modal.jsx'
 export default function SetupGuideModal({ data, patch, onClose }) {
   const [step, setStep] = useState(1)
 
-  // 학기 이름은 시작일의 달로 — 3~7월이면 1학기, 아니면 2학기
+  // 학기 이름은 시작일의 달로 — 3~7월이면 1학기, 아니면 2학기.
+  // 학기를 바꾸면 시작일이 그 학기로 옮겨가므로 이름도 따라온다.
   const m = Number((data.semStart || '').slice(5, 7)) || new Date().getMonth() + 1
-  const semLabel = m >= 3 && m <= 7 ? '1학기' : '2학기'
+  const semNum = m >= 3 && m <= 7 ? 1 : 2
+  const semLabel = semNum + '학기'
   const ok = data.semStart && data.semEnd && data.semStart < data.semEnd
+
+  // 방학 중에 다음 학기를 준비하는 경우 — 넣어 둔 학사일정에서 그 학기 날짜를 다시 잡는다
+  const pickSem = n => {
+    if (n === semNum) return
+    const evs = (data.events || []).map(e => ({ date: e.start, name: e.name }))
+    const g = guessSemester(evs, toISO(new Date()), n)
+    patch({ semStart: g.start, semEnd: g.end })
+  }
 
   return (
     <Modal title={step === 1 ? semLabel + ' 기간을 확인해주세요' : '시간표를 등록해주세요'} onClose={onClose} width={470}>
@@ -30,8 +41,13 @@ export default function SetupGuideModal({ data, patch, onClose }) {
           </div>
 
           <div style={{ marginTop: 16, border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', padding: '16px 18px' }}>
+            {/* 방학 중에 다음 학기를 준비할 수도 있다 — 학기를 누르면 그 학기 날짜로 다시 잡는다 */}
+            <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
+              {[1, 2].map(n => (
+                <button key={n} onClick={() => pickSem(n)} style={semChip(semNum === n)}>{n}학기</button>
+              ))}
+            </div>
             <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
-              <div style={{ ...SECTION_TITLE, fontSize: 14, flex: 'none' }}>{semLabel}</div>
               <input
                 type="date"
                 value={data.semStart}
@@ -96,6 +112,13 @@ const dateField = {
   border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF',
   fontSize: 13, padding: '7px 9px', boxSizing: 'border-box',
 }
+
+// 학기 전환 칩 — 학사일정 검색의 학년 칩과 같은 모양
+const semChip = on => ({
+  border: '1px solid ' + (on ? '#CBDED7' : LINE), borderRadius: 999, padding: '5px 13px',
+  background: on ? '#EAF1EE' : '#FFFFFF', color: on ? GREEN : SUB,
+  fontSize: 12.5, fontWeight: on ? 700 : 500, cursor: on ? 'default' : 'pointer', flex: 'none',
+})
 
 // ── 시간표 등록 데모 ──────────────────────────────────────────────────────────
 // 실제 설정 화면(TimetableEditor)의 모양 그대로, 커서가 칸 셋을 고르고
