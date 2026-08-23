@@ -48,13 +48,12 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
     </div>
   )
 
-  // 일정 등록 방법. 처음에는 아무것도 펼치지 않고 두 버튼만 보여준다 —
-  // 달력이나 목록이 먼저 보이면 어디부터 손대야 할지 알기 어렵기 때문.
-  const schedView = data.cfg.schedView // null | 'cal' | 'list'
+  // 일정은 목록(일정뷰)이 기본. 달력뷰로 바꾸면 그 선택이 저장된다.
+  const schedView = data.cfg.schedView // null(=일정뷰) | 'cal' | 'list'
   const calView = schedView === 'cal'
   const setView = v => setData(d => ({ ...d, cfg: { ...d.cfg, schedView: v } }))
 
-  // 등록 방법을 한 번 고른 뒤에는 달력뷰/일정뷰 탭으로 오간다
+  // 달력뷰/일정뷰를 오가고, 학교검색으로 학사일정을 통째로 가져온다
   const regButtons = (
     <div style={{ display: 'flex', gap: 6, flex: 'none', alignItems: 'center' }}>
       <button onClick={() => setView('cal')} title="달력에 칠해서 간편 등록" style={{ ...(calView ? CHIP_BTN : CHIP_BTN_OFF), padding: '7px 12px' }}>
@@ -73,33 +72,9 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
     </div>
   )
 
-  // 첫 화면 — 큰 버튼 두 개만. 일단 눌러보게 하는 것이 목적이다.
-  const chooser = (
-    <div style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 20 }}>
-      <div style={{ ...SECTION_TITLE, marginBottom: 4 }}>수업이 없는 날을 등록하세요</div>
-      <button onClick={() => setView('cal')} style={bigBtn(true)}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 15, fontWeight: 800 }}>
-          <CalendarIcon />간편등록(추천)
-        </span>
-        <span style={{ fontSize: 12.5, fontWeight: 500, opacity: 0.85 }}>달력에서 쉬는 날을 죽 칠하면 끝</span>
-      </button>
-      <button onClick={() => setView('list')} style={bigBtn(false)}>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 7, fontSize: 15, fontWeight: 800 }}>
-          <ListIcon />세부등록
-        </span>
-        <span style={{ fontSize: 12.5, fontWeight: 500, color: FAINT }}>이름·기간·유형을 하나씩 입력</span>
-      </button>
-      {/* 우리 학교 학사일정이 이미 나이스에 있다면 손으로 넣을 것도 없다 */}
-      <button onClick={openSchools} style={{ ...linkish, marginTop: 2 }}>
-        <SearchIcon />
-        학교 이름으로 학사일정 찾기
-      </button>
-    </div>
-  )
-
   const schedule = (
     <div data-intro-sched style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%' }}>
-      {schedView == null ? chooser : calView ? (
+      {calView ? (
         <ScheduleCalendar data={data} setData={setData} setSnack={setSnack} actions={regButtons} paintable />
       ) : (
         <div style={{ border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF', padding: '0 12px 10px', flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column' }}>
@@ -159,11 +134,6 @@ export default function SetupView({ data, patch, setData, computed, setSnack, go
   )
 }
 
-const linkish = {
-  display: 'flex', alignItems: 'center', gap: 6, border: 'none', background: 'none',
-  padding: '4px 6px', cursor: 'pointer', fontSize: 13, fontWeight: 600, color: GREEN,
-}
-
 function SearchIcon() {
   return (
     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -172,14 +142,6 @@ function SearchIcon() {
     </svg>
   )
 }
-
-// 첫 화면의 큰 선택 버튼 (추천 쪽은 초록 채움)
-const bigBtn = primary => ({
-  width: '100%', maxWidth: 320, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5,
-  border: '1px solid ' + (primary ? GREEN : LINE), borderRadius: 8,
-  background: primary ? GREEN : '#FFFFFF', color: primary ? '#FFFFFF' : INK,
-  padding: '15px 18px', cursor: 'pointer', lineHeight: 1.3,
-})
 
 const dateField = {
   border: '1px solid ' + LINE, borderRadius: 6, background: '#FFFFFF',
