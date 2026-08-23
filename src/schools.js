@@ -128,11 +128,12 @@ export function schoolYearRange(baseIso) {
 // 받아온 학사일정에서 지금 학기의 시작·종료일을 추정한다.
 // 개학식·방학식이 있으면 그 날짜를, 없으면 학기 창 안의 첫·마지막 일정을,
 // 그것도 없으면 통상적인 날짜를 쓴다. 어차피 확인 화면에서 사용자가 고친다.
-export function guessSemester(events, baseIso) {
+export function guessSemester(events, baseIso, forceSem) {
   const y = Number(baseIso.slice(0, 4))
   const m = Number(baseIso.slice(5, 7))
   const schoolYear = m >= 3 ? y : y - 1
-  const sem = m >= 3 && m <= 7 ? 1 : 2
+  // 기본은 오늘이 속한 학기. 방학 중에 다음 학기를 준비할 때는 학기를 직접 고를 수 있다.
+  const sem = forceSem === 1 || forceSem === 2 ? forceSem : m >= 3 && m <= 7 ? 1 : 2
 
   const win = sem === 1
     ? { from: schoolYear + '-03-01', to: schoolYear + '-07-31' }
