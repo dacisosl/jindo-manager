@@ -125,6 +125,32 @@ export function schoolYearRange(baseIso) {
   return { from: start + '-03-01', to: start + 1 + '-02-28' }
 }
 
+// 받아온 학사일정에서 지금 학기의 시작·종료일을 추정한다.
+// 개학식·방학식이 있으면 그 날짜를, 없으면 학기 창 안의 첫·마지막 일정을,
+// 그것도 없으면 통상적인 날짜를 쓴다. 어차피 확인 화면에서 사용자가 고친다.
+export function guessSemester(events, baseIso) {
+  const y = Number(baseIso.slice(0, 4))
+  const m = Number(baseIso.slice(5, 7))
+  const schoolYear = m >= 3 ? y : y - 1
+  const sem = m >= 3 && m <= 7 ? 1 : 2
+
+  const win = sem === 1
+    ? { from: schoolYear + '-03-01', to: schoolYear + '-07-31' }
+    : { from: schoolYear + '-08-01', to: schoolYear + 1 + '-02-28' }
+  const inWin = list => list.filter(ev => win.from <= ev.date && ev.date <= win.to)
+
+  const all = inWin(events || []).slice().sort((a, b) => (a.date < b.date ? -1 : 1))
+  const startEv = all.find(ev => /개학|시업|입학식/.test(ev.name))
+  const endEv = all.filter(ev => /방학/.test(ev.name)).pop()
+
+  const start = (startEv && startEv.date) || (all[0] && all[0].date) ||
+    (sem === 1 ? schoolYear + '-03-02' : schoolYear + '-08-17')
+  const end = (endEv && endEv.date) || (all.length && all[all.length - 1].date) ||
+    (sem === 1 ? schoolYear + '-07-17' : schoolYear + '-12-31')
+
+  return { sem, label: sem + '학기', start, end: end > start ? end : win.to }
+}
+
 // ── 내장 데이터 (나이스가 응답하지 않을 때) ──────────────────────────────────
 let indexPromise = null
 const regionCache = new Map()
