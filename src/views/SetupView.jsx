@@ -1,6 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
-import introJs from 'intro.js'
-import 'intro.js/introjs.css'
+import React, { useState } from 'react'
 import { GREEN, INK, FAINT, LINE, SUB, SECTION_TITLE, CHIP_BTN, CHIP_BTN_OFF } from '../logic.js'
 import TimetableEditor from './TimetableEditor.jsx'
 import ScheduleEditor from './ScheduleEditor.jsx'
@@ -10,52 +8,10 @@ import useSplit from '../useSplit.js'
 
 // 최초 설정 = 진도표 화면과 같은 골격(윗줄 + 시간표 + 오른쪽 패널).
 // 윗줄만 대시보드 대신 학기 기간이고, 오른쪽 패널은 차시별 내용 대신 일정이다.
-export default function SetupView({ data, patch, setData, computed, setSnack, goImport, openSchools, onStart, fit, tourTick, holdTour }) {
+export default function SetupView({ data, patch, setData, computed, setSnack, goImport, openSchools, onStart, fit }) {
   const { isMobile } = useWindowWidth()
   const { wrapRef, splitPct, dragging, startDrag } = useSplit(data, setData)
   const [mtab, setMtab] = useState('grid') // 모바일 탭: grid | sched
-  const tourRef = useRef(null)
-
-  const startTour = () => {
-    if (tourRef.current) return
-    const tour = introJs.tour()
-    tourRef.current = tour
-    tour
-      .setOptions({
-        nextLabel: '다음', prevLabel: '이전', doneLabel: '완료', skipLabel: '×',
-        exitOnOverlayClick: true, showBullets: true, scrollToElement: true,
-        steps: [
-          { title: '학기 기간', element: '[data-intro-sem]', intro: '학기 시작일과 종료일을 정합니다. 이 기간의 평일에 차시가 계산됩니다.' },
-          { title: '칸 선택', element: '[data-intro-grid]', intro: '수업이 있는 칸을 눌러 고릅니다. 한 반의 수업 시간을 모두 고르세요.' },
-          { title: '반 등록', element: '[data-intro-register]', intro: '고른 칸을 반으로 등록합니다. 반 이름과 과목을 넣으면 색이 자동으로 부여됩니다.' },
-          { title: '일정', element: '[data-intro-sched]', intro: '휴업일·행사·고사·출장을 넣으면 그 날 수업이 빠지고 뒤 차시가 밀립니다. [학교검색]을 누르면 우리 학교 학사일정을 그대로 가져올 수 있습니다.' },
-          { title: '학교 시간표', element: '[data-intro-hamil]', intro: '해밀고 교사라면 이 마크를 눌러 이름 검색으로 시간표를 바로 불러올 수 있습니다.' },
-          { title: '시작', element: '[data-intro-start]', intro: '다 채웠으면 이 버튼을 누릅니다. 진도표가 바로 만들어집니다.' },
-        ],
-      })
-      .onbeforechange(function () {
-        if (isMobile) setMtab((this._currentStep ?? 0) === 3 ? 'sched' : 'grid')
-        return true
-      })
-      .onexit(() => {
-        tourRef.current = null
-        patch({ introSeen: true })
-      })
-    tour.start()
-  }
-
-  // 안내 투어는 모달이 떠 있는 동안 기다린다 — 학사일정 안내·학교 검색이 먼저다
-  useEffect(() => {
-    if (!data.introSeen && !holdTour) {
-      const t = setTimeout(startTour, 400)
-      return () => clearTimeout(t)
-    }
-  }, [holdTour])
-
-  // 상단 바의 안내 버튼
-  useEffect(() => {
-    if (tourTick) startTour()
-  }, [tourTick])
 
   const ok = data.semStart && data.semEnd && data.semStart < data.semEnd && Object.keys(data.pattern).length > 0
   const min = !!data.cfg.minimal

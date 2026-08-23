@@ -7,6 +7,7 @@ import SettingsModal from './views/SettingsModal.jsx'
 import HamilModal from './views/HamilModal.jsx'
 import SchoolCalendarModal from './views/SchoolCalendarModal.jsx'
 import ScheduleGuideModal from './views/ScheduleGuideModal.jsx'
+import SetupGuideModal from './views/SetupGuideModal.jsx'
 import SetupView from './views/SetupView.jsx'
 import Snackbar from './views/Snackbar.jsx'
 import useWindowWidth from './useWindowWidth.js'
@@ -32,7 +33,7 @@ export default function App() {
   const [schedGuideOpen, setSchedGuideOpen] = useState(
     () => !data.setupDone && !data.schedIntroSeen && !data.events.length
   )
-  const [tourTick, setTourTick] = useState(0) // 상단 바의 안내 버튼 → 설정 화면 투어 시작
+  const [setupGuideOpen, setSetupGuideOpen] = useState(false) // 학기 확인 + 시간표 데모 안내
   const [printing, setPrinting] = useState(false)
 
   useEffect(() => {
@@ -171,7 +172,7 @@ export default function App() {
           </button>
         )}
         {view === 'setup' && (
-          <button onClick={() => setTourTick(t => t + 1)} title="사용 안내" className="hov" style={iconBtn}>
+          <button onClick={() => setSetupGuideOpen(true)} title="사용 안내" className="hov" style={iconBtn}>
             <GuideIcon />
           </button>
         )}
@@ -201,9 +202,7 @@ export default function App() {
       <div style={{ flex: fit ? 1 : undefined, minHeight: 0, display: 'flex', flexDirection: 'column', overflow: fit ? 'auto' : undefined }}>
         {view === 'grid' && <GridView {...ctx} fit={fit} />}
         {view === 'import' && <ImportView {...ctx} kind={importKind} />}
-        {view === 'setup' && (
-          <SetupView {...ctx} fit={fit} tourTick={tourTick} onStart={finishSetup} holdTour={schedGuideOpen || schoolOpen} />
-        )}
+        {view === 'setup' && <SetupView {...ctx} fit={fit} onStart={finishSetup} />}
       </div>
 
       {settingsOpen && (
@@ -231,7 +230,11 @@ export default function App() {
           setData={setData}
           setSnack={setSnack}
           onClose={() => setSchoolOpen(false)}
+          onApplied={() => { if (!data.setupDone) setSetupGuideOpen(true) }}
         />
+      )}
+      {setupGuideOpen && (
+        <SetupGuideModal data={data} patch={patch} onClose={() => setSetupGuideOpen(false)} />
       )}
       {hamilOpen && (
         <HamilModal

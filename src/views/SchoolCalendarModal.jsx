@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react'
 import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, fromISO, toISO } from '../logic.js'
 import {
   EVENT_TYPES, loadSchoolIndex, loadSchoolEvents, searchSchools, toAppEvents,
-  neisSearchSchools, neisSchedule, schoolYearRange,
+  neisSearchSchools, neisSchedule, schoolYearRange, guessSemester,
 } from '../schools.js'
 import Modal from './Modal.jsx'
 
@@ -10,7 +10,7 @@ import Modal from './Modal.jsx'
 // 나이스 오픈API를 실시간으로 조회하고, 나이스가 응답하지 않으면 내장 데이터로 전환한다.
 // 이 앱에서는 일정이 곧 결손이므로, 수업이 실제로 빠지는 휴업일·고사만 처음부터 골라 둔다.
 // 행사는 학교마다 수업을 하기도 해서 사용자가 직접 고른다.
-export default function SchoolCalendarModal({ data, setData, setSnack, onClose }) {
+export default function SchoolCalendarModal({ data, setData, setSnack, onClose, onApplied }) {
   const [mode, setMode] = useState('neis') // neis | local (나이스 실패 시 내장 데이터)
   const [index, setIndex] = useState(null) // 내장 데이터 목록 — local 모드에서만 쓴다
   const [error, setError] = useState('')
@@ -148,9 +148,17 @@ export default function SchoolCalendarModal({ data, setData, setSnack, onClose }
     if (!chosen.length) return
     const evs = toAppEvents(chosen)
     const prev = data.events
-    setData(d => ({ ...d, events: [...d.events, ...evs] }))
+    // 학기 기간이 아직 없으면 학사일정을 기준으로 지금 학기의 시작·종료일을 함께 잡아 둔다.
+    // 이어지는 확인 화면에서 사용자가 보고 고친다.
+    const sem = hasSem ? null : guessSemester(events, toISO(new Date()))
+    setData(d => ({
+      ...d,
+      events: [...d.events, ...evs],
+      ...(sem ? { semStart: sem.start, semEnd: sem.end } : {}),
+    }))
     setSnack({ text: school.name + ' 학사일정 ' + evs.length + '건을 넣었습니다.', kind: 'events', prev })
     onClose()
+    if (onApplied) onApplied()
   }
 
   // 화면에 보여줄 조회 기간 — 나이스는 학년도 전체, 내장 데이터는 담긴 범위
