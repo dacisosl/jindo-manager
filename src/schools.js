@@ -2,14 +2,13 @@
 //
 // 나이스 오픈API(open.neis.go.kr)를 브라우저에서 직접 호출해 학교와 학사일정을
 // 실시간으로 받는다 — 학년도 전체가 조회되고 데이터를 따로 갱신할 것이 없다.
-// 나이스가 응답하지 않으면(점검·차단 등) public/schools/ 에 미리 만들어 둔
-// 내장 데이터로 자동 전환한다 (원본: 나이스 학사일정 CSV → scripts/build-schools.mjs).
-const BASE = () => import.meta.env.BASE_URL + 'schools/'
+// 자료는 이것 하나뿐이다. 예전에는 실패하면 3월분 내장 데이터로 조용히 넘어갔는데,
+// 그러면 "3월까지만 나온다"가 되어 무엇이 잘못됐는지 알 수 없었다. 실패는 실패로 알린다.
 
 export const EVENT_TYPES = ['행사', '휴업일', '고사'] // 저장된 숫자 → 앱의 일정 유형
 
 // 지필평가처럼 이름이 분명한 것만 고사로 본다. 모의고사·학력평가는 수업을 하는
-// 날이 많아 행사로 둔다 (내장 데이터를 만드는 build-schools.mjs 와 같은 기준).
+// 날이 많아 행사로 둔다.
 const EXAM = /지필|중간고사|기말고사|정기고사|학기말고사|기말시험|중간시험/
 
 // ── 나이스 오픈API ───────────────────────────────────────────────────────────
@@ -20,18 +19,39 @@ const NEIS_BASE = 'https://open.neis.go.kr/hub/'
 
 async function neis(path, params) {
   const qs = new URLSearchParams({ KEY: NEIS_KEY, Type: 'json', ...params })
-  const res = await fetch(NEIS_BASE + path + '?' + qs)
-  if (!res.ok) throw new Error('나이스 응답 오류 (' + res.status + ')')
-  const json = await res.json()
+  let res
+  try {
+    res = await fetch(NEIS_BASE + path + '?' + qs)
+  } catch {
+    // 네트워크가 끊겼거나 브라우저가 요청 자체를 막은 경우(CORS·확장프로그램 등)
+    throw new Error('나이스에 연결하지 못했습니다. 인터넷 연결을 확인하고 다시 시도해주세요.')
+  }
+  if (!res.ok) throw new Error('나이스가 응답하지 않습니다 (HTTP ' + res.status + '). 잠시 후 다시 시도해주세요.')
+
+  let json
+  try {
+    json = await res.json()
+  } catch {
+    throw new Error('나이스 응답을 읽지 못했습니다. 잠시 후 다시 시도해주세요.')
+  }
+
   const block = json && json[path]
   if (!block) {
     // 결과가 없으면 {RESULT:{CODE:'INFO-200'}} 만 온다 — 오류가 아니라 빈 결과다
     const code = (json && json.RESULT && json.RESULT.CODE) || ''
     if (code.startsWith('INFO-200')) return []
-    throw new Error((json && json.RESULT && json.RESULT.MESSAGE) || '나이스 응답 오류')
+    throw new Error(neisMessage(code, json && json.RESULT && json.RESULT.MESSAGE))
   }
   const rows = block.find(b => Array.isArray(b.row))
   return rows ? rows.row : []
+}
+
+// 나이스가 돌려주는 코드는 그대로 보여줘도 알기 어렵다 — 무엇을 해야 하는지로 바꿔 준다
+function neisMessage(code, raw) {
+  if (code.startsWith('INFO-300') || code.startsWith('ERROR-290')) return '나이스 인증키가 유효하지 않습니다. 관리자에게 알려주세요.'
+  if (code.startsWith('ERROR-337')) return '오늘 나이스 조회 한도를 넘었습니다. 내일 다시 시도하거나 일정을 직접 넣어주세요.'
+  if (code.startsWith('ERROR-500') || code.startsWith('ERROR-600') || code.startsWith('ERROR-601')) return '나이스 서버에 문제가 있습니다. 잠시 후 다시 시도해주세요.'
+  return (raw || '나이스에서 자료를 받지 못했습니다.') + (code ? ' (' + code + ')' : '')
 }
 
 // 나이스 학교급 이름 → 내장 데이터와 같은 번호 (초1 · 중2 · 고3, 그 밖은 기타)
@@ -150,94 +170,6 @@ export function guessSemester(events, baseIso, forceSem) {
     (sem === 1 ? schoolYear + '-07-17' : schoolYear + '-12-31')
 
   return { sem, label: sem + '학기', start, end: end > start ? end : win.to }
-}
-
-// ── 내장 데이터 (나이스가 응답하지 않을 때) ──────────────────────────────────
-let indexPromise = null
-const regionCache = new Map()
-
-async function getJSON(file) {
-  const res = await fetch(BASE() + file, { cache: 'force-cache' })
-  if (!res.ok) throw new Error('NOFILE')
-  return res.json()
-}
-
-// {meta:{start,end,years,levels}, schools:[{key,code,name,level,levelName,region,regionName}]}
-export function loadSchoolIndex() {
-  if (!indexPromise) {
-    indexPromise = getJSON('index.json')
-      .then(idx => {
-        const levels = idx.levels || []
-        const schools = []
-        for (const [region, info] of Object.entries(idx.regions || {})) {
-          for (const [code, name, level] of info.schools) {
-            schools.push({
-              key: code + '-' + level,
-              code,
-              name,
-              level,
-              levelName: levels[level] || '',
-              region,
-              regionName: info.name,
-              search: name.replace(/\s+/g, ''),
-              chosung: chosung(name),
-            })
-          }
-        }
-        return { meta: { start: idx.start, end: idx.end, years: idx.years || [], levels, builtAt: idx.builtAt }, schools }
-      })
-      .catch(e => {
-        indexPromise = null // 실패는 기억하지 않는다 — 다시 시도할 수 있게
-        throw e
-      })
-  }
-  return indexPromise
-}
-
-export function loadSchoolEvents(region, key) {
-  if (!regionCache.has(region)) {
-    regionCache.set(
-      region,
-      getJSON(region + '.json').catch(e => {
-        regionCache.delete(region)
-        throw e
-      })
-    )
-  }
-  return regionCache.get(region).then(map => (map[key] || []).map(([date, name, type, grades, detail]) => ({
-    date, name, type, grades, detail: detail || '',
-  })))
-}
-
-// 한글 초성 — "ㄱㄹㄱ"으로도 가락고를 찾을 수 있게
-const CHO = 'ㄱㄲㄴㄷㄸㄹㅁㅂㅃㅅㅆㅇㅈㅉㅊㅋㅌㅍㅎ'
-function chosung(s) {
-  let out = ''
-  for (const ch of s) {
-    const c = ch.charCodeAt(0)
-    if (c >= 0xac00 && c <= 0xd7a3) out += CHO[Math.floor((c - 0xac00) / 588)]
-    else if (!/\s/.test(ch)) out += ch
-  }
-  return out
-}
-const isChosungQuery = q => q.length > 1 && [...q].every(ch => CHO.includes(ch))
-
-// 이름 검색. 앞에서부터 맞는 학교를 위로 올리고, 학교급 필터를 걸 수 있다.
-export function searchSchools(schools, query, { level = null, limit = 60 } = {}) {
-  const q = query.trim().replace(/\s+/g, '')
-  if (!q) return []
-  const cho = isChosungQuery(q)
-  const hits = []
-  for (const s of schools) {
-    if (level != null && s.level !== level) continue
-    const hay = cho ? s.chosung : s.search
-    const i = hay.indexOf(q)
-    if (i < 0) continue
-    hits.push({ s, rank: (i === 0 ? 0 : 1) * 100 + i })
-    if (hits.length > 4000) break // 한 글자 검색처럼 너무 넓은 질의는 적당히 끊는다
-  }
-  hits.sort((a, b) => a.rank - b.rank || a.s.name.localeCompare(b.s.name, 'ko'))
-  return hits.slice(0, limit).map(h => h.s)
 }
 
 // 고른 일정들을 앱의 events 로 바꾼다.
