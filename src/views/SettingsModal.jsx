@@ -199,7 +199,26 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
                 )
               })}
             </div>
-            <div style={{ fontSize: 12, color: FAINT }}></div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {[[1, '이번 주', '한 주'], [2, '2주치', '다음 주까지']].map(([n, labelText, note]) => {
+                const on = (cfg.printWeeks || 1) === n
+                return (
+                  <button
+                    key={n}
+                    onClick={() => setCfg({ printWeeks: n })}
+                    style={{
+                      flex: 1, border: '1px solid ' + (on ? GREEN : LINE), borderRadius: 6, cursor: 'pointer',
+                      background: on ? GREEN : '#FFFFFF', color: on ? '#FFFFFF' : SUB,
+                      padding: '9px 0', fontSize: 13, fontWeight: on ? 700 : 500,
+                    }}
+                  >
+                    {labelText}
+                    <div style={{ fontSize: 11, fontWeight: 400, marginTop: 3, opacity: 0.85 }}>{note}</div>
+                  </button>
+                )
+              })}
+            </div>
+            <div style={{ fontSize: 12, color: FAINT }}>2주치는 보고 있는 주와 그 다음 주를 이어서 뽑습니다. 크게는 두 장, 중간은 한 장에 담깁니다.</div>
           </div>
         </Sec>
 
