@@ -1,5 +1,5 @@
 ﻿import React, { useRef, useState } from 'react'
-import { GREEN, FAINT, INK, LINE, SUB, WARN, RED, exportCSV } from '../logic.js'
+import { GREEN, FAINT, INK, LINE, SUB, WARN, RED, exportCSV, printSizes, fitScale } from '../logic.js'
 import { getApiKey, setApiKey, getModel, setModel, exportJSON, importJSON, defaultData } from '../storage.js'
 import { checkKey } from '../importer.js'
 import Modal from './Modal.jsx'
@@ -7,6 +7,7 @@ import Modal from './Modal.jsx'
 export default function SettingsModal({ data, setData, computed, today, setSnack, onClose, onResetSetup, onImport, onSchools }) {
   const [confirmClear, setConfirmClear] = useState(false)
   const cfg = data.cfg
+  const weeks = cfg.printWeeks || 1 // 인쇄 범위 — 고를 수 있는 크기가 여기에 달렸다
   const [open, setOpen] = useState({ mode: true, sem: true, count: true, view: false, dash: false, print: false, data: false, file: false })
   const [key, setKey] = useState(getApiKey)
   const [keyShown, setKeyShown] = useState(false)
@@ -180,32 +181,15 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
 
         <Sec id="print" title="인쇄">
           <div style={{ padding: '0 0 16px', display: 'flex', flexDirection: 'column', gap: 12, fontSize: 14 }}>
-            <div style={{ display: 'flex', gap: 8 }}>
-              {[['s', '작게', '1/4'], ['m', '중간', '1/2'], ['l', '크게', '1']].map(([k, labelText, ratio]) => {
-                const on = cfg.printScale === k
-                return (
-                  <button
-                    key={k}
-                    onClick={() => setCfg({ printScale: k })}
-                    style={{
-                      flex: 1, border: '1px solid ' + (on ? GREEN : LINE), borderRadius: 6, cursor: 'pointer',
-                      background: on ? GREEN : '#FFFFFF', color: on ? '#FFFFFF' : SUB,
-                      padding: '9px 0', fontSize: 13, fontWeight: on ? 700 : 500,
-                    }}
-                  >
-                    {labelText}
-                    <div style={{ fontSize: 11, fontWeight: 400, marginTop: 3, opacity: 0.85 }}>A4 {ratio}</div>
-                  </button>
-                )
-              })}
-            </div>
+            {/* 범위를 먼저 고른다 — 고를 수 있는 크기가 범위에 따라 달라지므로 */}
             <div style={{ display: 'flex', gap: 8 }}>
               {[[1, '이번 주', '한 주'], [2, '2주치', '다음 주까지']].map(([n, labelText, note]) => {
-                const on = (cfg.printWeeks || 1) === n
+                const on = weeks === n
                 return (
                   <button
                     key={n}
-                    onClick={() => setCfg({ printWeeks: n })}
+                    // 크기가 그 범위에 없으면(크게 + 2주치) 함께 내려 준다 — 저장본이 어긋나지 않게
+                    onClick={() => setCfg({ printWeeks: n, printScale: fitScale(cfg.printScale || 'l', n) })}
                     style={{
                       flex: 1, border: '1px solid ' + (on ? GREEN : LINE), borderRadius: 6, cursor: 'pointer',
                       background: on ? GREEN : '#FFFFFF', color: on ? '#FFFFFF' : SUB,
@@ -218,7 +202,30 @@ export default function SettingsModal({ data, setData, computed, today, setSnack
                 )
               })}
             </div>
-            <div style={{ fontSize: 12, color: FAINT }}>2주치는 보고 있는 주와 그 다음 주를 이어서 뽑습니다. 크게는 두 장, 중간은 한 장에 담깁니다.</div>
+            <div style={{ display: 'flex', gap: 8 }}>
+              {printSizes(weeks).map(({ k, label: labelText, note }) => {
+                const on = fitScale(cfg.printScale || 'l', weeks) === k
+                return (
+                  <button
+                    key={k}
+                    onClick={() => setCfg({ printScale: k })}
+                    style={{
+                      flex: 1, border: '1px solid ' + (on ? GREEN : LINE), borderRadius: 6, cursor: 'pointer',
+                      background: on ? GREEN : '#FFFFFF', color: on ? '#FFFFFF' : SUB,
+                      padding: '9px 0', fontSize: 13, fontWeight: on ? 700 : 500,
+                    }}
+                  >
+                    {labelText}
+                    <div style={{ fontSize: 11, fontWeight: 400, marginTop: 3, opacity: 0.85 }}>{note[weeks > 1 ? 2 : 1]}</div>
+                  </button>
+                )
+              })}
+            </div>
+            <div style={{ fontSize: 12, color: FAINT }}>
+              {weeks > 1
+                ? '보고 있는 주와 그 다음 주를 이어서 한 장에 뽑습니다. 한 주만으로 A4 한 장을 쓰는 「크게」는 두 장이 되어 고를 수 없습니다.'
+                : '보고 있는 주만 뽑습니다.'}
+            </div>
           </div>
         </Sec>
 

@@ -23,7 +23,7 @@ export const defaultData = () => ({
     anim: true,
     dash: { today: true, progress: true, exam: true }, // 대시보드에 띄울 항목
     printScale: 'l', // 인쇄 크기: s(A4의 1/4) · m(1/2) · l(1)
-    printWeeks: 1, // 인쇄 범위: 1(이번 주) · 2(2주치 — 다음 주까지)
+    printWeeks: 1, // 인쇄 범위: 1(이번 주) · 2(2주치 — 다음 주까지, 크게는 못 고른다)
     fontScale: 1, // 화면 글씨 크기 배율
     minimal: false, // 미니멀 모드: 제목·설명을 걷어내고 필요한 것만
   },

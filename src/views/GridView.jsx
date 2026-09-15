@@ -1,15 +1,9 @@
 ﻿import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, RED, SECTION_TITLE, CHIP_BTN, CHIP_BTN_OFF, addDays, fromISO, toISO, colorOf, subjectOf, sectionTarget } from '../logic.js'
+import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, RED, SECTION_TITLE, CHIP_BTN, CHIP_BTN_OFF, addDays, fromISO, toISO, colorOf, subjectOf, sectionTarget, printSizes, fitScale } from '../logic.js'
 import ContentsPanel from './ContentsPanel.jsx'
 import Palette from './Palette.jsx'
 import useWindowWidth from '../useWindowWidth.js'
 import useSplit from '../useSplit.js'
-
-// 크기 × 범위별로 실제로 쓰는 지면. 2주치는 한 주 덩어리를 두 번 쌓으므로 꼭 두 배가 든다.
-const PAPER_NOTE = {
-  1: { s: 'A4의 1/4', m: 'A4의 1/2', l: 'A4 한 장' },
-  2: { s: 'A4의 1/2', m: 'A4 한 장', l: 'A4 두 장' },
-}
 
 export default function GridView({ data, setData, computed, today, setSnack, go, goImport, weekOffset, setWeekOffset, stagger, fit }) {
   const { sessions, perClass, exam } = computed
@@ -469,19 +463,22 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
               </div>
             )}
           </div>
-          {[['s', '작게'], ['m', '중간'], ['l', '크게']].map(([k, label]) => (
-            <div
-              key={k}
-              className="hov2"
-              onClick={() => doPrint(k)}
-              style={{ display: 'flex', alignItems: 'baseline', gap: 8, padding: '8px 14px', fontSize: 14, cursor: 'pointer' }}
-            >
-              <span style={{ fontWeight: cfg.printScale === k ? 700 : 400 }}>{label}</span>
-              <span style={{ fontSize: 11, color: FAINT }}>{PAPER_NOTE[pickWeeks > 1 ? 2 : 1][k]}</span>
-              <div style={{ flex: 1 }} />
-              {cfg.printScale === k && <span style={{ fontSize: 12, color: GREEN, fontWeight: 700 }}>✓</span>}
-            </div>
-          ))}
+          {printSizes(pickWeeks).map(({ k, label, note }) => {
+            const on = fitScale(cfg.printScale || 'l', pickWeeks) === k
+            return (
+              <div
+                key={k}
+                className="hov2"
+                onClick={() => doPrint(k)}
+                style={{ display: 'flex', alignItems: 'baseline', gap: 8, padding: '8px 14px', fontSize: 14, cursor: 'pointer' }}
+              >
+                <span style={{ fontWeight: on ? 700 : 400 }}>{label}</span>
+                <span style={{ fontSize: 11, color: FAINT }}>{note[pickWeeks > 1 ? 2 : 1]}</span>
+                <div style={{ flex: 1 }} />
+                {on && <span style={{ fontSize: 12, color: GREEN, fontWeight: 700 }}>✓</span>}
+              </div>
+            )
+          })}
           <label
             style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 14px 8px', marginTop: 4, borderTop: '1px solid ' + LINE_SOFT, fontSize: 12, color: SUB, cursor: 'pointer' }}
           >
@@ -565,10 +562,11 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
   // 인쇄 전용 시트 — 화면 레이아웃을 그대로 찍지 않고, 종이에 맞게 정돈된 표를 내보낸다.
   // 크기는 배율 축소가 아니라 지면별로 따로 조판한다 (한 주 기준):
   //   크게 = A4 한 장 · 중간 = 상단 절반(행 압축) · 작게 = 좌상단 1/4(폭 절반, 반+차시만)
-  // 2주치는 이 덩어리를 두 번 쌓으므로 크게만 두 장이 되고 나머지는 한 장에 담긴다.
-  const pscale = (printAs && printAs.scale) || cfg.printScale || 'l'
+  // 2주치는 이 덩어리를 두 번 쌓으므로, 두 장이 되는 '크게'는 아예 고를 수 없다 (printSizes).
   // 인쇄할 주: 1이면 보고 있는 주만, 2면 다음 주까지
   const nWeeks = (printAs && printAs.weeks) || cfg.printWeeks || 1
+  // 2주치에 '크게'는 고를 수 없지만, 예전에 저장된 조합이면 여기서 한 장짜리로 내린다
+  const pscale = fitScale((printAs && printAs.scale) || cfg.printScale || 'l', nWeeks)
   const printWeeks = nWeeks > 1 ? [week, weekOf(1)] : [week]
   const P = {
     l: { width: '100%', rowH: 90, cls: 11.5, num: 15, cont: 10.5, title: 19, sub: 12, day: 12, dayPad: '6px 4px', pcol: 26, showCont: true },
