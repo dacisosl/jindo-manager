@@ -1,5 +1,5 @@
 ﻿import React, { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, RED, SECTION_TITLE, CHIP_BTN, CHIP_BTN_OFF, addDays, fromISO, toISO, colorOf, subjectOf, sectionTarget } from '../logic.js'
+import { DAYS, GREEN, INK, SUB, FAINT, LINE, LINE_SOFT, WARN, RED, SECTION_TITLE, CHIP_BTN, CHIP_BTN_OFF, addDays, fromISO, toISO, colorOf, subjectOf, sectionTarget, printSizes, fitScale } from '../logic.js'
 import ContentsPanel from './ContentsPanel.jsx'
 import Palette from './Palette.jsx'
 import useWindowWidth from '../useWindowWidth.js'
@@ -16,7 +16,8 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
   const [mtab, setMtab] = useState('grid') // 모바일 탭: grid | dash | contents
   const [printOpen, setPrintOpen] = useState(false)
   const [printRemember, setPrintRemember] = useState(true)
-  const [printAs, setPrintAs] = useState(null) // 이번 인쇄에 쓸 크기 (기억 안 함 선택 대비)
+  const [printAs, setPrintAs] = useState(null) // 이번 인쇄에 쓸 {scale, weeks} (기억 안 함 선택 대비)
+  const [pickWeeks, setPickWeeks] = useState(data.cfg.printWeeks || 1) // 인쇄 메뉴에서 고른 범위
   const [gridH, setGridH] = useState(null)
   const gridRef = useRef(null)
   const touchRef = useRef(null)
@@ -53,15 +54,23 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
   // 주말에는 이미 지난 주가 아니라 다음 주 월요일부터 보여준다
   const dow0 = t.getDay()
   const mon0 = addDays(t, 1 - (dow0 || 7) + (dow0 === 0 || dow0 === 6 ? 7 : 0))
-  const mon = addDays(mon0, weekOffset * 7)
-  const days = []
-  for (let i = 0; i < 5; i++) {
-    const d = addDays(mon, i)
-    const iso = toISO(d)
-    days.push({ iso, label: DAYS[d.getDay()] + ' ' + d.getDate(), isToday: iso === today })
+  // 보고 있는 주에서 off 주 뒤의 월~금. 인쇄에서 2주치를 뽑을 때 다음 주도 이 함수로 만든다.
+  const weekOf = off => {
+    const m = addDays(mon0, (weekOffset + off) * 7)
+    const ds = []
+    for (let i = 0; i < 5; i++) {
+      const d = addDays(m, i)
+      const iso = toISO(d)
+      ds.push({ iso, label: DAYS[d.getDay()] + ' ' + d.getDate(), isToday: iso === today })
+    }
+    const f = addDays(m, 4)
+    return { mon: m, fri: f, days: ds, label: m.getMonth() + 1 + '.' + m.getDate() + ' – ' + (f.getMonth() + 1) + '.' + f.getDate() }
   }
-  const fri = addDays(mon, 4)
-  const weekLabel = mon.getMonth() + 1 + '.' + mon.getDate() + ' – ' + (fri.getMonth() + 1) + '.' + fri.getDate()
+  const week = weekOf(0)
+  const mon = week.mon
+  const fri = week.fri
+  const days = week.days
+  const weekLabel = week.label
 
   const semD = data.semStart ? fromISO(data.semStart) : t
   const semM = semD.getMonth() + 1
@@ -397,8 +406,8 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
   }
 
   const doPrint = scale => {
-    if (printRemember) setData(d => ({ ...d, cfg: { ...d.cfg, printScale: scale } }))
-    setPrintAs(scale)
+    if (printRemember) setData(d => ({ ...d, cfg: { ...d.cfg, printScale: scale, printWeeks: pickWeeks } }))
+    setPrintAs({ scale, weeks: pickWeeks })
     setPrintOpen(false)
     setTimeout(() => {
       window.print()
@@ -409,7 +418,13 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
   const printButton = (
     <div data-print="hide" style={{ position: 'relative', display: 'inline-flex' }}>
       <button
-        onClick={e => { e.stopPropagation(); setPrintOpen(!printOpen); setPop(null); setMenuOpen(false) }}
+        onClick={e => {
+          e.stopPropagation()
+          if (!printOpen) setPickWeeks(cfg.printWeeks || 1) // 열 때마다 저장된 범위에서 시작
+          setPrintOpen(!printOpen)
+          setPop(null)
+          setMenuOpen(false)
+        }}
         style={{ ...CHIP_BTN, padding: min ? '6px 8px' : '6px 12px' }}
       >
         <PrinterIcon />
@@ -423,19 +438,47 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
             borderRadius: 6, boxShadow: '0 8px 24px rgba(26,26,26,0.12)', padding: '6px 0', zIndex: 60,
           }}
         >
-          {[['s', '작게', 'A4의 1/4'], ['m', '중간', 'A4의 1/2'], ['l', '크게', 'A4 한 장']].map(([k, label, note]) => (
-            <div
-              key={k}
-              className="hov2"
-              onClick={() => doPrint(k)}
-              style={{ display: 'flex', alignItems: 'baseline', gap: 8, padding: '8px 14px', fontSize: 14, cursor: 'pointer' }}
-            >
-              <span style={{ fontWeight: cfg.printScale === k ? 700 : 400 }}>{label}</span>
-              <span style={{ fontSize: 11, color: FAINT }}>{note}</span>
-              <div style={{ flex: 1 }} />
-              {cfg.printScale === k && <span style={{ fontSize: 12, color: GREEN, fontWeight: 700 }}>✓</span>}
+          <div style={{ padding: '2px 12px 8px', borderBottom: '1px solid ' + LINE_SOFT, marginBottom: 4 }}>
+            <div style={{ display: 'flex', gap: 5 }}>
+              {[[1, '이번 주'], [2, '2주치']].map(([n, label]) => {
+                const on = pickWeeks === n
+                return (
+                  <button
+                    key={n}
+                    onClick={() => setPickWeeks(n)}
+                    style={{
+                      flex: 1, border: '1px solid ' + (on ? GREEN : LINE), borderRadius: 6, cursor: 'pointer',
+                      background: on ? GREEN : '#FFFFFF', color: on ? '#FFFFFF' : SUB,
+                      padding: '6px 0', fontSize: 12.5, fontWeight: on ? 700 : 500,
+                    }}
+                  >
+                    {label}
+                  </button>
+                )
+              })}
             </div>
-          ))}
+            {pickWeeks > 1 && (
+              <div style={{ marginTop: 6, fontSize: 11, color: FAINT, textAlign: 'center' }}>
+                {weekLabel} + {weekOf(1).label}
+              </div>
+            )}
+          </div>
+          {printSizes(pickWeeks).map(({ k, label, note }) => {
+            const on = fitScale(cfg.printScale || 'l', pickWeeks) === k
+            return (
+              <div
+                key={k}
+                className="hov2"
+                onClick={() => doPrint(k)}
+                style={{ display: 'flex', alignItems: 'baseline', gap: 8, padding: '8px 14px', fontSize: 14, cursor: 'pointer' }}
+              >
+                <span style={{ fontWeight: on ? 700 : 400 }}>{label}</span>
+                <span style={{ fontSize: 11, color: FAINT }}>{note[pickWeeks > 1 ? 2 : 1]}</span>
+                <div style={{ flex: 1 }} />
+                {on && <span style={{ fontSize: 12, color: GREEN, fontWeight: 700 }}>✓</span>}
+              </div>
+            )
+          })}
           <label
             style={{ display: 'flex', alignItems: 'center', gap: 7, padding: '9px 14px 8px', marginTop: 4, borderTop: '1px solid ' + LINE_SOFT, fontSize: 12, color: SUB, cursor: 'pointer' }}
           >
@@ -517,9 +560,14 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
   )
 
   // 인쇄 전용 시트 — 화면 레이아웃을 그대로 찍지 않고, 종이에 맞게 정돈된 표를 내보낸다.
-  // 크기는 배율 축소가 아니라 지면별로 따로 조판한다:
+  // 크기는 배율 축소가 아니라 지면별로 따로 조판한다 (한 주 기준):
   //   크게 = A4 한 장 · 중간 = 상단 절반(행 압축) · 작게 = 좌상단 1/4(폭 절반, 반+차시만)
-  const pscale = printAs || cfg.printScale || 'l'
+  // 2주치는 이 덩어리를 두 번 쌓으므로, 두 장이 되는 '크게'는 아예 고를 수 없다 (printSizes).
+  // 인쇄할 주: 1이면 보고 있는 주만, 2면 다음 주까지
+  const nWeeks = (printAs && printAs.weeks) || cfg.printWeeks || 1
+  // 2주치에 '크게'는 고를 수 없지만, 예전에 저장된 조합이면 여기서 한 장짜리로 내린다
+  const pscale = fitScale((printAs && printAs.scale) || cfg.printScale || 'l', nWeeks)
+  const printWeeks = nWeeks > 1 ? [week, weekOf(1)] : [week]
   const P = {
     l: { width: '100%', rowH: 90, cls: 11.5, num: 15, cont: 10.5, title: 19, sub: 12, day: 12, dayPad: '6px 4px', pcol: 26, showCont: true },
     m: { width: '100%', rowH: 52, cls: 10, num: 13, cont: 9.5, title: 15, sub: 10.5, day: 10.5, dayPad: '4px 3px', pcol: 20, showCont: true },
@@ -527,30 +575,32 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
   }[pscale]
   const pth = { border: '1px solid #ACA8A0', background: '#EFEDE6', padding: P.dayPad, fontSize: P.day, fontWeight: 700, textAlign: 'center', color: '#333' }
   const ptd = { border: '1px solid #ACA8A0', height: P.rowH, verticalAlign: 'top', padding: 0, overflow: 'hidden' }
-  const printSheet = (
-    <div className="print-sheet" style={{ width: P.width }}>
+  // 한 주 = 제목줄 + 표 한 벌. 2주치는 이 덩어리를 두 번 쌓는다.
+  // break-inside: avoid 덕분에 한 주가 지면에 다 안 들어가면 통째로 다음 장으로 넘어간다.
+  const weekBlock = (w, i) => (
+    <div key={w.days[0].iso} style={{ breakInside: 'avoid', pageBreakInside: 'avoid', marginTop: i ? (P.rowH > 40 ? 14 : 10) : 0 }}>
       <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: P.rowH > 40 ? 8 : 5 }}>
-        <span style={{ fontSize: P.title, fontWeight: 800, letterSpacing: '-0.01em' }}>{weekLabel}</span>
+        <span style={{ fontSize: P.title, fontWeight: 800, letterSpacing: '-0.01em' }}>{w.label}</span>
         <span style={{ fontSize: P.sub, color: '#666' }}>{semLabel} 진도계획표</span>
         <span style={{ flex: 1 }} />
-        {P.showCont && <span style={{ fontSize: 11, color: '#888' }}>인쇄 {today}</span>}
+        {P.showCont && !i && <span style={{ fontSize: 11, color: '#888' }}>인쇄 {today}</span>}
       </div>
       <table style={{ width: '100%', borderCollapse: 'collapse', tableLayout: 'fixed' }}>
         <colgroup>
           <col style={{ width: P.pcol }} />
-          {days.map(d => <col key={d.iso} />)}
+          {w.days.map(d => <col key={d.iso} />)}
         </colgroup>
         <thead>
           <tr>
             <th style={pth} />
-            {days.map(day => <th key={day.iso} style={pth}>{day.label}</th>)}
+            {w.days.map(day => <th key={day.iso} style={pth}>{day.label}</th>)}
           </tr>
         </thead>
         <tbody>
           {[1, 2, 3, 4, 5, 6, 7].map(p => (
             <tr key={p}>
               <td style={{ ...ptd, background: '#F3F1EB', textAlign: 'center', verticalAlign: 'middle', fontSize: Math.max(9, P.day - 1.5), color: '#777' }}>{p}</td>
-              {days.map(day => {
+              {w.days.map(day => {
                 const s = sessions[day.iso + '|' + p]
                 if (!s) return <td key={day.iso} style={ptd} />
                 if (s.canceled && !s.perf) {
@@ -589,6 +639,12 @@ export default function GridView({ data, setData, computed, today, setSnack, go,
           ))}
         </tbody>
       </table>
+    </div>
+  )
+
+  const printSheet = (
+    <div className="print-sheet" style={{ width: P.width }}>
+      {printWeeks.map(weekBlock)}
     </div>
   )
 

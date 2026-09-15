@@ -42,6 +42,18 @@ export const CHIP_BTN = {
 // 꺼져 있을 때 (요약·차시별 내용 접힌 상태)
 export const CHIP_BTN_OFF = { ...CHIP_BTN, border: '1px solid ' + LINE, background: '#FFFFFF', color: SUB }
 
+// 인쇄 크기 — 한 주를 어느 지면에 조판할지. 2주치는 같은 덩어리를 한 번 더 쌓으므로 지면이 배로 든다.
+// '크게'는 한 주만으로 A4 한 장을 다 쓰는 크기라 2주치에서는 고를 수 없다 (note에 2가 없다).
+const PRINT_SIZES = [
+  { k: 's', label: '작게', note: { 1: 'A4의 1/4', 2: 'A4의 1/2' } },
+  { k: 'm', label: '중간', note: { 1: 'A4의 1/2', 2: 'A4 한 장' } },
+  { k: 'l', label: '크게', note: { 1: 'A4 한 장' } },
+]
+// 그 범위에서 고를 수 있는 크기들 — 2주치면 '크게'가 빠져 무엇을 골라도 한 장에 담긴다.
+export const printSizes = weeks => PRINT_SIZES.filter(x => x.note[weeks > 1 ? 2 : 1])
+// 저장된 크기가 그 범위에 없으면(예전에 고른 '크게' + 2주치) 한 장에 담기는 쪽으로 내린다.
+export const fitScale = (scale, weeks) => (weeks > 1 && scale === 'l' ? 'm' : scale)
+
 export function toISO(d) {
   const p = n => String(n).padStart(2, '0')
   return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate())
